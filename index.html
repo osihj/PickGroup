@@ -54,34 +54,48 @@
 
         button { touch-action: manipulation; }
         .order-card-text { white-space: nowrap; word-break: keep-all; }
+        
+        .stat-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 900;
+            border: 2px solid transparent;
+        }
     </style>
 </head>
 <body class="p-4 md:p-10 pb-20">
     <div class="max-w-6xl mx-auto">
-        <header class="mb-6 flex flex-col items-center md:items-start text-center md:text-left">
+        <header class="mb-8 flex flex-col items-center md:items-start text-center md:text-left">
             <h1 class="text-3xl md:text-4xl font-black text-slate-800 tracking-tight">抽籤分組工具 <span class="text-blue-500">.</span></h1>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
             <div class="lg:col-span-4 space-y-6">
-                <div class="bg-white p-5 rounded-2xl neubrutalism">
-                    <label class="block text-lg font-bold mb-3">成員管理</label>
-                    <textarea id="inputContent" rows="3" placeholder="貼上名單 (支援 LINE 格式與多行)..." class="w-full p-4 border-2 border-slate-100 rounded-xl focus:border-blue-400 focus:outline-none transition resize-none text-sm bg-slate-50"></textarea>
-                    <button onclick="addMembers()" class="w-full mt-3 bg-slate-800 text-white font-bold py-4 rounded-xl hover:bg-slate-700 transition active:scale-[0.98]">批次匯入名單</button>
-                    
-                    <div class="mt-6">
-                        <div class="flex justify-between items-end mb-4 px-1">
-                            <span class="font-bold text-xs text-slate-400 uppercase tracking-widest" id="memberCountLabel">名單 (0)</span>
-                            <div class="flex gap-3 text-[11px] font-bold">
-                                <button onclick="toggleAll(true)" class="text-blue-500 hover:underline">全選</button>
-                                <button onclick="toggleAll(false)" class="text-slate-400 hover:underline">取消</button>
-                                <span class="text-slate-200">|</span>
-                                <button onclick="clearStorage()" class="text-red-400">清空</button>
-                            </div>
-                        </div>
-                        <div id="memberList" class="flex flex-wrap gap-2 max-h-[250px] overflow-y-auto pr-2"></div>
+                <div class="space-y-4">
+                    <textarea id="inputContent" rows="3" placeholder="貼上名單（支援接龍與多行)..." class="w-full p-4 border-2 border-slate-200 rounded-2xl focus:border-blue-400 focus:outline-none transition resize-none text-sm bg-white neubrutalism"></textarea>
+                    <button onclick="addMembers()" class="w-full bg-slate-800 text-white font-bold py-4 rounded-xl hover:bg-slate-700 transition active:scale-[0.98]">匯入名單</button>
+                </div>
+                
+                <div class="flex flex-wrap gap-2 py-2 border-b-2 border-slate-100">
+                    <div class="stat-tag bg-blue-50 text-blue-600 border-blue-100">總計 <span id="statTotal" class="ml-1">0</span></div>
+                    <div class="stat-tag bg-amber-50 text-amber-600 border-amber-100">★ <span id="statStar" class="ml-1">0</span></div>
+                    <div class="stat-tag bg-slate-100 text-slate-500 border-slate-200">餘 <span id="statOthers" class="ml-1">0</span></div>
+                </div>
+
+                <div class="flex justify-between items-center px-1">
+                    <span class="font-bold text-[11px] text-slate-400 uppercase tracking-widest" id="memberCountLabel">總名單 0</span>
+                    <div class="flex gap-3 text-[11px] font-bold">
+                        <button onclick="toggleAll(true)" class="text-blue-500 hover:underline">全選</button>
+                        <button onclick="toggleAll(false)" class="text-slate-400 hover:underline">取消</button>
+                        <span class="text-slate-200">|</span>
+                        <button onclick="clearStorage()" class="text-red-400">清空</button>
                     </div>
                 </div>
+
+                <div id="memberList" class="flex flex-wrap gap-2 max-h-[400px] overflow-y-auto pr-2"></div>
             </div>
 
             <div id="setup-section" class="lg:col-span-8 space-y-6">
@@ -104,21 +118,16 @@
                     </div>
                 </div>
 
-                <div class="flex justify-between items-center px-2">
-                    <span id="activeCountLabel" class="text-sm text-blue-500 font-black uppercase tracking-widest">總計 0 人</span>
-                </div>
-
                 <div id="resultArea" class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // 更新儲存版本號，避免快取衝突
-        let members = JSON.parse(localStorage.getItem('my_group_tool_v22') || '[]');
+        let members = JSON.parse(localStorage.getItem('my_group_tool_v24') || '[]');
         let currentGroups = [];
 
-        function save() { localStorage.setItem('my_group_tool_v22', JSON.stringify(members)); render(); }
+        function save() { localStorage.setItem('my_group_tool_v24', JSON.stringify(members)); render(); }
 
         function changeGroupCount(val) {
             const input = document.getElementById('groupCount');
@@ -126,13 +135,11 @@
             if (current + val >= 1) input.value = current + val;
         }
 
-        // 改回支援 LINE 文字與自動過濾的版本
         function addMembers() {
             const input = document.getElementById('inputContent').value;
             if (!input.trim()) return;
             const lines = input.split(/[\n,;，\s\t]+/);
             lines.forEach(line => {
-                // 過濾規則：排除時間 (10:30)、排除純數字開頭且只有數字、排除系統關鍵字
                 if (/^(\d{1,2}:\d{2})/.test(line)) return; 
                 if (/第\d+組/.test(line)) return;
                 
@@ -153,19 +160,33 @@
 
         function render() {
             const list = document.getElementById('memberList');
-            list.innerHTML = members.length === 0 ? '<div class="w-full py-10 text-center text-slate-300 italic text-sm">尚未加入成員</div>' : '';
+            list.innerHTML = members.length === 0 ? '<div class="w-full py-10 text-center text-slate-300 italic text-sm">請匯入成員</div>' : '';
+            
             let activeCount = 0;
+            let starCount = 0;
+            
             members.forEach((m, idx) => {
-                if(m.present) activeCount++;
+                if(m.present) {
+                    activeCount++;
+                    if(m.isLeader) starCount++;
+                }
+                
                 const div = document.createElement('div');
                 let cardStyle = m.present ? (m.isLeader ? 'card-leader' : 'card-active') : 'card-inactive';
                 div.className = `${cardStyle} px-3 py-1.5 rounded-lg cursor-pointer font-bold text-sm flex items-center transition-all gap-2`;
                 div.onclick = () => toggleMember(idx);
-                div.innerHTML = `<span class="${m.isLeader ? 'text-amber-600' : 'text-slate-300'}" onclick="toggleLeader(${idx}, event)">★</span>${m.name}<span class="text-slate-300 hover:text-red-400 font-black" onclick="event.stopPropagation(); removeMember(${idx})">×</span>`;
+                div.innerHTML = `
+                    <span class="${m.isLeader ? 'text-amber-600' : 'text-slate-300'}" onclick="toggleLeader(${idx}, event)">★</span>
+                    ${m.name}
+                    <span class="text-slate-300 hover:text-red-400 font-black" onclick="event.stopPropagation(); removeMember(${idx})">×</span>
+                `;
                 list.appendChild(div);
             });
-            document.getElementById('memberCountLabel').innerText = `名單 (${members.length})`;
-            document.getElementById('activeCountLabel').innerText = `總計 ${activeCount} 人`;
+
+            document.getElementById('statTotal').innerText = activeCount;
+            document.getElementById('statStar').innerText = starCount;
+            document.getElementById('statOthers').innerText = activeCount - starCount;
+            document.getElementById('memberCountLabel').innerText = `總名單 ${members.length}`;
         }
 
         function shuffleAndGroup() {
@@ -224,10 +245,7 @@
                 const colSpan = (isLast && groups.length % 2 !== 0) ? 'col-span-2' : 'col-span-1';
                 const div = document.createElement('div');
                 div.className = `${colSpan} flex flex-col items-center relative`;
-                
-                // 箭頭顏色加深為 Amber-500
                 const arrow = (!isLast && i % 2 === 0) ? `<div class="absolute -right-2 md:-right-4 top-1/2 mt-2 text-amber-500 font-black text-xs md:text-base">→</div>` : '';
-                
                 div.innerHTML = `
                     <span class="text-[10px] md:text-[11px] text-amber-600 font-bold mb-1 md:mb-2">第 ${i+1} 順位</span>
                     <div class="bg-white px-4 md:px-8 py-2 md:py-3 rounded-lg md:rounded-xl border-2 border-amber-200 font-black text-lg md:text-2xl text-slate-800 shadow-sm order-card-text">
