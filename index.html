@@ -2,15 +2,17 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>抽籤分組工具</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap');
         html { scroll-behavior: smooth; }
-        body { font-family: 'Inter', 'Microsoft JhengHei', sans-serif; background-color: #f8fafc; color: #334155; }
+        body { font-family: 'Inter', 'Microsoft JhengHei', sans-serif; background-color: #f8fafc; color: #334155; -webkit-tap-highlight-color: transparent; }
+        
         .neubrutalism { border: 2px solid #475569; box-shadow: 4px 4px 0px 0px rgba(71, 85, 105, 0.1); }
         .card-result { border: 2px solid #475569; box-shadow: 4px 4px 0px 0px rgba(71, 85, 105, 0.1); }
+        
         .card-active { background-color: #ffffff; border: 2px solid #475569; }
         .card-leader { background-color: #fef3c7; border: 2px solid #d97706; color: #92400e; }
         .card-inactive { background-color: #f1f5f9; border: 2px solid #e2e8f0; color: #94a3b8; text-decoration: line-through; }
@@ -23,79 +25,80 @@
             border-radius: 4px; font-weight: 900; 
             animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             font-size: 0.875rem;
+            white-space: nowrap;
         }
         
         @keyframes popIn { 0% { transform: scale(0); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        .member-cols { column-count: 2; column-gap: 1.5rem; }
+        .member-cols { column-count: 2; column-gap: 1rem; }
         input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .btn-stepper { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: white; border: 2px solid #e2e8f0; border-radius: 10px; font-weight: 900; color: #475569; transition: all 0.2s; }
-        .btn-stepper:active { transform: scale(0.9); background: #f8fafc; }
+        
+        .btn-stepper { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: white; border: 2px solid #e2e8f0; border-radius: 10px; font-weight: 900; color: #475569; }
+        
+        .order-card-text { white-space: nowrap; word-break: keep-all; }
     </style>
 </head>
 <body class="p-4 md:p-10 pb-20">
     <div class="max-w-6xl mx-auto">
-        <header class="mb-8 flex flex-col items-center md:items-start text-center md:text-left">
-            <h1 class="text-4xl font-black text-slate-800 tracking-tight">抽籤分組工具 <span class="text-blue-500">.</span></h1>
+        <header class="mb-6 flex flex-col items-center md:items-start text-center md:text-left">
+            <h1 class="text-3xl md:text-4xl font-black text-slate-800 tracking-tight">抽籤分組工具 <span class="text-blue-500">.</span></h1>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
             <div class="lg:col-span-4 space-y-6">
-                <div class="bg-white p-6 rounded-2xl neubrutalism">
+                <div class="bg-white p-5 rounded-2xl neubrutalism">
                     <label class="block text-lg font-bold mb-3">成員管理</label>
-                    <textarea id="inputContent" rows="3" placeholder="貼上名單 (支援 LINE 接龍格式)..." class="w-full p-4 border-2 border-slate-100 rounded-xl focus:border-blue-400 focus:outline-none transition resize-none text-sm bg-slate-50"></textarea>
+                    <textarea id="inputContent" rows="3" placeholder="貼上名單 (自動過濾數字開頭)..." class="w-full p-4 border-2 border-slate-100 rounded-xl focus:border-blue-400 focus:outline-none transition resize-none text-sm bg-slate-50"></textarea>
                     <button onclick="addMembers()" class="w-full mt-3 bg-slate-800 text-white font-bold py-4 rounded-xl hover:bg-slate-700 transition active:translate-y-0.5">批次匯入名單</button>
                     
-                    <div class="mt-8">
+                    <div class="mt-6">
                         <div class="flex justify-between items-end mb-4 px-1">
                             <span class="font-bold text-xs text-slate-400 uppercase tracking-widest" id="memberCountLabel">名單 (0)</span>
                             <div class="flex gap-3 text-[11px] font-bold">
                                 <button onclick="toggleAll(true)" class="text-blue-500 hover:underline">全選</button>
                                 <button onclick="toggleAll(false)" class="text-slate-400 hover:underline">取消</button>
                                 <span class="text-slate-200">|</span>
-                                <button onclick="clearStorage()" class="text-red-400 hover:text-red-500">清空</button>
+                                <button onclick="clearStorage()" class="text-red-400">清空</button>
                             </div>
                         </div>
-                        <div id="memberList" class="flex flex-wrap gap-2 max-h-[300px] overflow-y-auto pr-2"></div>
+                        <div id="memberList" class="flex flex-wrap gap-2 max-h-[250px] overflow-y-auto pr-2"></div>
                     </div>
                 </div>
             </div>
 
             <div id="setup-section" class="lg:col-span-8 space-y-6">
-                <!-- 控制區 -->
-                <div class="bg-white p-5 rounded-2xl neubrutalism flex flex-col sm:flex-row items-stretch gap-4">
+                <div class="bg-white p-4 md:p-5 rounded-2xl neubrutalism flex flex-col sm:flex-row items-stretch gap-4">
                     <div class="flex items-center justify-between bg-slate-50 p-2 px-5 rounded-xl border-2 border-slate-100 flex-1">
                         <span class="text-sm font-bold text-slate-500">組數</span>
-                        <div class="flex items-center gap-5">
+                        <div class="flex items-center gap-4 md:gap-5">
                             <button onclick="changeGroupCount(-1)" class="btn-stepper">-</button>
                             <input id="groupCount" type="number" value="2" readonly class="w-10 bg-transparent font-black text-2xl text-slate-800 text-center focus:outline-none">
                             <button onclick="changeGroupCount(1)" class="btn-stepper">+</button>
                         </div>
                     </div>
-                    <button onclick="shuffleAndGroup()" class="flex-[1.5] bg-blue-500 text-white font-black py-4 rounded-xl text-lg hover:bg-blue-600 active:translate-y-0.5 transition-all">開始分組</button>
-                    <button id="btnDrawOrder" onclick="drawGroupOrderWithEffect()" disabled class="flex-[1.2] bg-amber-400 text-slate-800 font-black py-4 rounded-xl text-lg hover:bg-amber-500 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">抽順序</button>
+                    <button onclick="shuffleAndGroup()" class="flex-[1.5] bg-blue-500 text-white font-black py-4 rounded-xl text-lg active:translate-y-0.5 transition-all">開始分組</button>
+                    <button id="btnDrawOrder" onclick="drawGroupOrderWithEffect()" disabled class="flex-[1.2] bg-amber-400 text-slate-800 font-black py-4 rounded-xl text-lg active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">抽順序</button>
                 </div>
 
-                <!-- 順序顯示區 -->
                 <div id="orderSummary" class="hidden">
-                    <div class="bg-amber-50 border-2 border-amber-100 p-8 rounded-[32px] transition-all" id="orderVisualBox">
-                        <div class="grid grid-cols-2 gap-y-10 gap-x-4 max-w-md mx-auto relative" id="orderPath"></div>
+                    <div class="bg-amber-50 border-2 border-amber-100 p-4 md:p-8 rounded-[24px] md:rounded-[32px] transition-all" id="orderVisualBox">
+                        <div class="grid grid-cols-2 gap-y-6 md:gap-y-10 gap-x-2 md:gap-x-4 max-w-md mx-auto relative" id="orderPath"></div>
                     </div>
                 </div>
 
-                <div class="flex justify-between items-center px-2 pt-2">
+                <div class="flex justify-between items-center px-2">
                     <span id="activeCountLabel" class="text-sm text-blue-500 font-black uppercase tracking-widest">總計 0 人</span>
                 </div>
 
-                <div id="resultArea" class="grid grid-cols-1 sm:grid-cols-2 gap-6"></div>
+                <div id="resultArea" class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6"></div>
             </div>
         </div>
     </div>
 
     <script>
-        let members = JSON.parse(localStorage.getItem('my_group_tool_v18') || '[]');
+        let members = JSON.parse(localStorage.getItem('my_group_tool_v20') || '[]');
         let currentGroups = [];
 
-        function save() { localStorage.setItem('my_group_tool_v18', JSON.stringify(members)); render(); }
+        function save() { localStorage.setItem('my_group_tool_v20', JSON.stringify(members)); render(); }
 
         function changeGroupCount(val) {
             const input = document.getElementById('groupCount');
@@ -103,37 +106,21 @@
             if (current + val >= 1) input.value = current + val;
         }
 
-        // 優化後的匯入邏輯：過濾數字開頭
         function addMembers() {
             const input = document.getElementById('inputContent').value;
             if (!input.trim()) return;
-            
-            // 分割名單
             const rawNames = input.split(/[\n,;，\s\t]+/);
-            
             rawNames.forEach(rawName => {
-                // 正則表達式說明：移除字串開頭的數字以及緊跟在後的點、頓號、空格或連字號
-                // 例如 "1. 仙鳳" -> "仙鳳", "02、雅麗" -> "雅麗"
                 let cleanName = rawName.replace(/^[\d\s\.\-、]+/, '').trim();
-                
-                if (cleanName.length > 0) {
-                    if (!members.some(m => m.name.toLowerCase() === cleanName.toLowerCase())) {
-                        members.push({ name: cleanName, present: true, isLeader: false });
-                    }
+                if (cleanName.length > 0 && !members.some(m => m.name === cleanName)) {
+                    members.push({ name: cleanName, present: true, isLeader: false });
                 }
             });
-            
             document.getElementById('inputContent').value = '';
             save();
-            document.getElementById('setup-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
-        function toggleLeader(idx, e) {
-            e.stopPropagation();
-            members[idx].isLeader = !members[idx].isLeader;
-            save();
-        }
-
+        function toggleLeader(idx, e) { e.stopPropagation(); members[idx].isLeader = !members[idx].isLeader; save(); }
         function toggleMember(idx) { members[idx].present = !members[idx].present; save(); }
         function removeMember(idx) { members.splice(idx, 1); save(); }
         function toggleAll(val) { members.forEach(m => m.present = val); save(); }
@@ -149,11 +136,7 @@
                 let cardStyle = m.present ? (m.isLeader ? 'card-leader' : 'card-active') : 'card-inactive';
                 div.className = `${cardStyle} px-3 py-1.5 rounded-lg cursor-pointer font-bold text-sm flex items-center transition-all gap-2`;
                 div.onclick = () => toggleMember(idx);
-                div.innerHTML = `
-                    <span class="${m.isLeader ? 'text-amber-600' : 'text-slate-300 hover:text-amber-400'}" onclick="toggleLeader(${idx}, event)">★</span>
-                    ${m.name}
-                    <span class="text-slate-300 hover:text-red-400 font-black" onclick="event.stopPropagation(); removeMember(${idx})">×</span>
-                `;
+                div.innerHTML = `<span class="${m.isLeader ? 'text-amber-600' : 'text-slate-300'}" onclick="toggleLeader(${idx}, event)">★</span>${m.name}<span class="text-slate-300 hover:text-red-400 font-black" onclick="event.stopPropagation(); removeMember(${idx})">×</span>`;
                 list.appendChild(div);
             });
             document.getElementById('memberCountLabel').innerText = `名單 (${members.length})`;
@@ -165,26 +148,34 @@
             const leaders = activeOnes.filter(m => m.isLeader).sort(() => Math.random() - 0.5);
             const regulars = activeOnes.filter(m => !m.isLeader).sort(() => Math.random() - 0.5);
             const count = parseInt(document.getElementById('groupCount').value);
-            if (activeOnes.length === 0) return alert('請先勾選參與成員');
+            if (activeOnes.length === 0) return alert('請先選人');
 
             currentGroups = Array.from({ length: Math.min(count, activeOnes.length) }, (_, i) => ({ id: i + 1, members: [], order: null }));
             leaders.forEach((m, i) => currentGroups[i % currentGroups.length].members.push({ name: m.name, isLeader: true }));
-            regulars.forEach((m, i) => {
-                const targetIdx = (leaders.length + i) % currentGroups.length;
-                currentGroups[targetIdx].members.push({ name: m.name, isLeader: false });
-            });
+            regulars.forEach((m, i) => currentGroups[(leaders.length + i) % currentGroups.length].members.push({ name: m.name, isLeader: false }));
 
             document.getElementById('btnDrawOrder').disabled = false;
             document.getElementById('orderSummary').classList.add('hidden');
             renderResults();
+
+            // Smooth Scroll 到結果區域
+            setTimeout(() => {
+                document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
         }
 
         function drawGroupOrderWithEffect() {
             const btn = document.getElementById('btnDrawOrder');
             const visualBox = document.getElementById('orderVisualBox');
+            const orderSummary = document.getElementById('orderSummary');
+            
             btn.disabled = true;
+            orderSummary.classList.remove('hidden');
+            
+            // 先滾動到順序區塊的位置，讓用戶看著它閃爍
+            orderSummary.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
             visualBox.classList.add('is-shuffling-area');
-            document.getElementById('orderSummary').classList.remove('hidden');
             
             let counter = 0;
             const interval = setInterval(() => {
@@ -199,6 +190,9 @@
                     renderResults();
                     renderOrderSummary();
                     btn.disabled = false;
+                    
+                    // 結束後再次確保對齊中心
+                    orderSummary.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }, 80);
         }
@@ -211,9 +205,14 @@
                 const colSpan = (isLast && groups.length % 2 !== 0) ? 'col-span-2' : 'col-span-1';
                 const div = document.createElement('div');
                 div.className = `${colSpan} flex flex-col items-center relative`;
-                const arrow = (!isLast && i % 2 === 0) ? `<div class="absolute -right-4 top-1/2 mt-2 text-amber-200 font-black">→</div>` : '';
-                div.innerHTML = `<span class="text-[11px] text-amber-600 font-bold mb-2">第 ${i+1} 順位</span>
-                    <div class="bg-white px-8 py-3 rounded-xl border-2 border-amber-200 font-black text-2xl text-slate-800 shadow-sm">第 ${isTemp ? Math.floor(Math.random()*groups.length)+1 : g.id} 組</div>${arrow}`;
+                const arrow = (!isLast && i % 2 === 0) ? `<div class="absolute -right-2 md:-right-4 top-1/2 mt-2 text-amber-200 font-black text-xs md:text-base">→</div>` : '';
+                div.innerHTML = `
+                    <span class="text-[10px] md:text-[11px] text-amber-600 font-bold mb-1 md:mb-2">第 ${i+1} 順位</span>
+                    <div class="bg-white px-4 md:px-8 py-2 md:py-3 rounded-lg md:rounded-xl border-2 border-amber-200 font-black text-lg md:text-2xl text-slate-800 shadow-sm order-card-text">
+                        第 ${isTemp ? Math.floor(Math.random()*groups.length)+1 : g.id} 組
+                    </div>
+                    ${arrow}
+                `;
                 path.appendChild(div);
             });
         }
@@ -228,17 +227,17 @@
             area.innerHTML = '';
             currentGroups.forEach((group) => {
                 const div = document.createElement('div');
-                div.className = 'bg-white p-6 rounded-2xl card-result flex flex-col relative';
+                div.className = 'bg-white p-5 md:p-6 rounded-2xl card-result flex flex-col relative';
                 div.innerHTML = `
-                    <div class="flex justify-between items-start mb-6">
+                    <div class="flex justify-between items-start mb-4 md:mb-6">
                         <div class="flex flex-col gap-1">
-                            <span class="font-black text-2xl text-slate-800">第 ${group.id} 組</span>
-                            <div class="flex"><span class="text-[11px] font-bold text-blue-500 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100">${group.members.length} 人</span></div>
+                            <span class="font-black text-xl md:text-2xl text-slate-800">第 ${group.id} 組</span>
+                            <div class="flex"><span class="text-[10px] md:text-[11px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">${group.members.length} 人</span></div>
                         </div>
-                        ${group.order ? `<div class="order-badge">順序 ${group.order}</div>` : '<div class="h-[28px]"></div>'}
+                        ${group.order ? `<div class="order-badge">順序 ${group.order}</div>` : '<div class="h-[24px]"></div>'}
                     </div>
-                    <div class="${group.members.length > 6 ? 'member-cols' : 'space-y-1'} border-t-2 border-slate-50 pt-5">
-                        ${group.members.map(m => `<div class="font-bold ${m.isLeader ? 'text-amber-600' : 'text-slate-600'} text-base py-0.5 whitespace-nowrap">${m.isLeader ? '★' : '·'} ${m.name}</div>`).join('')}
+                    <div class="${group.members.length > 6 ? 'member-cols' : 'space-y-1'} border-t-2 border-slate-50 pt-4 md:pt-5">
+                        ${group.members.map(m => `<div class="font-bold ${m.isLeader ? 'text-amber-600' : 'text-slate-600'} text-sm md:text-base py-0.5 whitespace-nowrap">${m.isLeader ? '★' : '·'} ${m.name}</div>`).join('')}
                     </div>`;
                 area.appendChild(div);
             });
