@@ -267,6 +267,7 @@
             area.innerHTML = '';
             currentGroups.forEach((group) => {
                 const div = document.createElement('div');
+                // 恢復為原版 p-5 md:p-6
                 div.className = 'bg-white p-5 md:p-6 rounded-2xl card-result flex flex-col relative';
                 div.innerHTML = `
                     <div class="flex justify-between items-start mb-4 md:mb-6">
@@ -277,7 +278,7 @@
                         ${group.order ? `<div class="order-badge">順序 ${group.order}</div>` : '<div class="h-[24px]"></div>'}
                     </div>
                     <div class="${group.members.length > 6 ? 'member-cols' : 'space-y-1'} border-t-2 border-slate-50 pt-4 md:pt-5">
-                        ${group.members.map(m => `<div class="font-bold ${m.isLeader ? 'text-amber-600' : 'text-slate-600'} text-sm md:text-base py-0.5 whitespace-nowrap">${m.isLeader ? '★' : '·'} ${m.name}</div>`).join('')}
+                        ${group.members.map(m => `<div class="font-bold ${m.isLeader ? 'text-amber-600' : 'text-slate-600'} text-base md:text-lg py-0.5 whitespace-nowrap">${m.isLeader ? '★' : '·'} ${m.name}</div>`).join('')}
                     </div>`;
                 area.appendChild(div);
             });
