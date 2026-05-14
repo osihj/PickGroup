@@ -11,54 +11,60 @@
         body { font-family: 'Inter', 'Microsoft JhengHei', sans-serif; background-color: #f8fafc; color: #334155; }
         
         .neubrutalism { border: 2px solid #475569; box-shadow: 4px 4px 0px 0px rgba(71, 85, 105, 0.1); }
-        .card-result { border: 2px solid #475569; box-shadow: 3px 3px 0px 0px rgba(71, 85, 105, 0.1); }
+        .card-result { border: 2px solid #475569; box-shadow: 4px 4px 0px 0px rgba(71, 85, 105, 0.1); }
         
         .card-active { background-color: #ffffff; border: 2px solid #475569; }
         .card-inactive { background-color: #f1f5f9; border: 2px solid #e2e8f0; color: #94a3b8; text-decoration: line-through; }
         
-        /* 順序標籤樣式優化 */
+        /* 儀式感閃爍動畫 */
+        @keyframes shuffleFlash {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.98); filter: brightness(1.2); }
+        }
+        .is-shuffling-area { animation: shuffleFlash 0.15s infinite; }
+
         .order-badge { 
-            background-color: #ef4444; color: white; padding: 4px 12px; 
+            background-color: #ef4444; color: white; padding: 4px 14px; 
             border-radius: 6px; font-weight: 900; 
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            font-size: 0.9rem;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-size: 1rem;
         }
         
-        .member-cols { column-count: 2; column-gap: 1.5rem; }
-        
-        /* 隱藏原生箭頭 */
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            80% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
 
+        .member-cols { column-count: 2; column-gap: 1.5rem; }
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        
         .btn-stepper {
-            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
-            background: white; border: 2px solid #e2e8f0; border-radius: 8px;
+            width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+            background: white; border: 2px solid #e2e8f0; border-radius: 10px;
             font-weight: 900; color: #475569; transition: all 0.2s;
         }
-        .btn-stepper:active { background: #f1f5f9; transform: scale(0.9); }
+        .btn-stepper:active { transform: scale(0.9); background: #f8fafc; }
     </style>
 </head>
 <body class="p-4 md:p-10 pb-20">
     <div class="max-w-6xl mx-auto">
-        <header class="mb-6 flex flex-col items-center md:items-start text-center md:text-left">
-            <h1 class="text-4xl font-black text-slate-800">抽籤分組工具 <span class="text-blue-500">.</span></h1>
+        <header class="mb-8 flex flex-col items-center md:items-start text-center md:text-left">
+            <h1 class="text-4xl font-black text-slate-800 tracking-tight">抽籤分組工具 <span class="text-blue-500">.</span></h1>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div class="lg:col-span-4 space-y-6">
-                <div class="bg-white p-6 rounded-xl neubrutalism">
+                <div class="bg-white p-6 rounded-2xl neubrutalism">
                     <label class="block text-lg font-bold mb-3">成員管理</label>
                     <textarea id="inputContent" rows="3" placeholder="貼上名單..."
-                        class="w-full p-3 border-2 border-slate-100 rounded-lg focus:border-blue-400 focus:outline-none transition resize-none text-sm bg-slate-50"></textarea>
-                    <button onclick="addMembers()" class="w-full mt-3 bg-slate-800 text-white font-bold py-3 rounded-lg hover:bg-slate-700 transition active:translate-y-0.5">
+                        class="w-full p-4 border-2 border-slate-100 rounded-xl focus:border-blue-400 focus:outline-none transition resize-none text-sm bg-slate-50"></textarea>
+                    <button onclick="addMembers()" class="w-full mt-3 bg-slate-800 text-white font-bold py-4 rounded-xl hover:bg-slate-700 transition active:translate-y-0.5">
                         批次匯入名單
                     </button>
                     
-                    <div class="mt-6">
-                        <div class="flex justify-between items-end mb-4">
+                    <div class="mt-8">
+                        <div class="flex justify-between items-end mb-4 px-1">
                             <span class="font-bold text-xs text-slate-400 uppercase tracking-widest" id="memberCountLabel">名單 (0)</span>
                             <div class="flex gap-3 text-[11px] font-bold">
                                 <button onclick="toggleAll(true)" class="text-blue-500 hover:underline">全選</button>
@@ -72,32 +78,30 @@
                 </div>
             </div>
 
-            <div id="setup-section" class="lg:col-span-8 space-y-4">
-                <!-- 控制按鈕區優化 -->
-                <div class="bg-white p-4 rounded-xl neubrutalism flex flex-col sm:flex-row items-stretch gap-4">
-                    <div class="flex items-center justify-between bg-slate-50 p-2 px-4 rounded-lg border-2 border-slate-100 flex-1">
-                        <span class="text-sm font-bold text-slate-500 mr-4">組數</span>
-                        <div class="flex items-center gap-4">
+            <div id="setup-section" class="lg:col-span-8 space-y-6">
+                <!-- 按鈕控制區 -->
+                <div class="bg-white p-5 rounded-2xl neubrutalism flex flex-col sm:flex-row items-stretch gap-4">
+                    <div class="flex items-center justify-between bg-slate-50 p-2 px-5 rounded-xl border-2 border-slate-100 flex-1">
+                        <span class="text-sm font-bold text-slate-500">組數</span>
+                        <div class="flex items-center gap-5">
                             <button onclick="changeGroupCount(-1)" class="btn-stepper">-</button>
                             <input id="groupCount" type="number" value="2" readonly
-                                class="w-8 bg-transparent font-black text-2xl text-slate-800 text-center focus:outline-none">
+                                class="w-10 bg-transparent font-black text-2xl text-slate-800 text-center focus:outline-none">
                             <button onclick="changeGroupCount(1)" class="btn-stepper">+</button>
                         </div>
                     </div>
-                    
-                    <button onclick="shuffleAndGroup()" class="px-8 bg-blue-500 text-white font-black py-4 rounded-lg text-lg hover:bg-blue-600 active:translate-y-0.5 transition-all">
+                    <button onclick="shuffleAndGroup()" class="flex-[1.5] bg-blue-500 text-white font-black py-4 rounded-xl text-lg hover:bg-blue-600 active:translate-y-0.5 transition-all">
                         開始分組
                     </button>
-                    
-                    <button id="btnDrawOrder" onclick="drawGroupOrderWithEffect()" disabled class="px-8 bg-amber-400 text-slate-800 font-black py-4 rounded-lg text-lg hover:bg-amber-500 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">
+                    <button id="btnDrawOrder" onclick="drawGroupOrderWithEffect()" disabled class="flex-[1.2] bg-amber-400 text-slate-800 font-black py-4 rounded-xl text-lg hover:bg-amber-500 active:translate-y-0.5 transition-all disabled:opacity-30 disabled:grayscale">
                         抽順序
                     </button>
                 </div>
 
-                <!-- 優化後的順序路徑區 -->
+                <!-- 順序路徑區：還原圖片排版 -->
                 <div id="orderSummary" class="hidden">
-                    <div class="bg-amber-50 border-2 border-amber-200 p-5 rounded-2xl">
-                        <div class="flex flex-wrap justify-center items-center gap-y-4 gap-x-2" id="orderPath"></div>
+                    <div class="bg-amber-50 border-2 border-amber-100 p-8 rounded-[32px] transition-all" id="orderVisualBox">
+                        <div class="grid grid-cols-2 gap-y-10 gap-x-4 max-w-md mx-auto relative" id="orderPath"></div>
                     </div>
                 </div>
 
@@ -105,26 +109,24 @@
                     <span id="activeCountLabel" class="text-sm text-blue-500 font-black uppercase tracking-widest">總計 0 人</span>
                 </div>
 
-                <div id="resultArea" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+                <div id="resultArea" class="grid grid-cols-1 sm:grid-cols-2 gap-6"></div>
             </div>
         </div>
     </div>
 
     <script>
-        let members = JSON.parse(localStorage.getItem('my_group_tool_v14') || '[]');
+        let members = JSON.parse(localStorage.getItem('my_group_tool_v15') || '[]');
         let currentGroups = [];
 
         function save() {
-            localStorage.setItem('my_group_tool_v14', JSON.stringify(members));
+            localStorage.setItem('my_group_tool_v15', JSON.stringify(members));
             render();
         }
 
         function changeGroupCount(val) {
             const input = document.getElementById('groupCount');
             let current = parseInt(input.value);
-            if (current + val >= 1) {
-                input.value = current + val;
-            }
+            if (current + val >= 1) input.value = current + val;
         }
 
         function addMembers() {
@@ -158,8 +160,7 @@
 
         function clearStorage() {
             if(confirm('確定要清空所有名單嗎？')) {
-                members = [];
-                currentGroups = [];
+                members = []; currentGroups = [];
                 document.getElementById('resultArea').innerHTML = '';
                 document.getElementById('orderSummary').classList.add('hidden');
                 document.getElementById('btnDrawOrder').disabled = true;
@@ -192,10 +193,7 @@
             
             const shuffled = activeOnes.sort(() => Math.random() - 0.5);
             currentGroups = Array.from({ length: Math.min(count, shuffled.length) }, (_, i) => ({
-                id: i + 1,
-                members: [],
-                order: null,
-                isShuffling: false
+                id: i + 1, members: [], order: null, isShuffling: false
             }));
             
             shuffled.forEach((name, i) => currentGroups[i % currentGroups.length].members.push(name));
@@ -207,20 +205,27 @@
 
         function drawGroupOrderWithEffect() {
             const btn = document.getElementById('btnDrawOrder');
+            const visualBox = document.getElementById('orderVisualBox');
             btn.disabled = true;
-            currentGroups.forEach(g => g.isShuffling = true);
-            renderResults();
-
+            
+            // 開啟閃爍儀式感
+            visualBox.classList.add('is-shuffling-area');
+            document.getElementById('orderSummary').classList.remove('hidden');
+            
             let counter = 0;
             const interval = setInterval(() => {
+                // 亂序顯示過程
+                const tempGroups = [...currentGroups].sort(() => Math.random() - 0.5);
+                renderOrderPath(tempGroups, true);
+                
                 counter++;
-                if (counter > 10) {
+                if (counter > 15) {
                     clearInterval(interval);
+                    visualBox.classList.remove('is-shuffling-area');
+                    
                     const finalOrder = Array.from({ length: currentGroups.length }, (_, i) => i + 1).sort(() => Math.random() - 0.5);
-                    currentGroups.forEach((group, i) => {
-                        group.isShuffling = false;
-                        group.order = finalOrder[i];
-                    });
+                    currentGroups.forEach((group, i) => group.order = finalOrder[i]);
+                    
                     renderResults();
                     renderOrderSummary();
                     btn.disabled = false;
@@ -228,22 +233,40 @@
             }, 80);
         }
 
-        function renderOrderSummary() {
-            const container = document.getElementById('orderSummary');
+        function renderOrderPath(groups, isTemp = false) {
             const path = document.getElementById('orderPath');
-            container.classList.remove('hidden');
+            path.innerHTML = '';
+            
+            groups.forEach((g, i) => {
+                const isLast = i === groups.length - 1;
+                const isOddCount = groups.length % 2 !== 0;
+                
+                // 圖片中的雙欄與居中邏輯
+                const colSpan = (isLast && isOddCount) ? 'col-span-2' : 'col-span-1';
+                
+                const item = document.createElement('div');
+                item.className = `${colSpan} flex flex-col items-center relative`;
+                
+                // 箭頭邏輯 (只有非最後一個且非單數末尾才顯示圖片中的橫向箭頭)
+                const arrow = (!isLast && i % 2 === 0) 
+                    ? `<div class="absolute -right-4 top-1/2 mt-2 text-amber-200 font-black">→</div>` : '';
+
+                item.innerHTML = `
+                    <span class="text-[11px] text-amber-600 font-bold mb-2">第 ${i+1} 順位</span>
+                    <div class="bg-white px-8 py-3 rounded-xl border-2 border-amber-200 font-black text-2xl text-slate-800 shadow-sm">
+                        第 ${isTemp ? Math.floor(Math.random()*groups.length)+1 : g.id} 組
+                    </div>
+                    ${arrow}
+                `;
+                path.appendChild(item);
+            });
+        }
+
+        function renderOrderSummary() {
+            document.getElementById('orderSummary').classList.remove('hidden');
             const sorted = [...currentGroups].sort((a, b) => a.order - b.order);
-            
-            path.innerHTML = sorted.map((g, i) => `
-                <div class="flex flex-col items-center">
-                    <span class="text-[10px] text-amber-600 font-bold uppercase mb-1">第 ${i+1} 順位</span>
-                    <div class="bg-white px-4 py-2 rounded-lg border-2 border-amber-200 font-black text-slate-800">第 ${g.id} 組</div>
-                </div>
-                ${i < sorted.length - 1 ? '<div class="text-amber-300 font-black text-xl px-1 pt-4">→</div>' : ''}
-            `).join('');
-            
-            // 抽完後滑動到順序區
-            container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            renderOrderPath(sorted);
+            document.getElementById('orderSummary').scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
         function renderResults() {
@@ -251,27 +274,27 @@
             area.innerHTML = '';
             currentGroups.forEach((group, i) => {
                 const div = document.createElement('div');
-                div.className = 'bg-white p-5 rounded-xl card-result flex flex-col relative overflow-hidden';
+                div.className = 'bg-white p-6 rounded-2xl card-result flex flex-col relative';
                 
                 const orderHtml = group.order 
                     ? `<div class="order-badge">順序 ${group.order}</div>` 
-                    : (group.isShuffling ? `<div class="order-badge bg-blue-400 shuffling">...</div>` : '');
+                    : `<div class="h-[32px]"></div>`;
 
                 const listClass = group.members.length > 6 ? 'member-cols' : 'space-y-1';
 
                 div.innerHTML = `
                     <div class="flex justify-between items-start mb-6">
                         <div class="flex flex-col gap-1">
-                            <span class="font-black text-2xl text-slate-800">第 ${group.id} 組</span>
+                            <span class="font-black text-2xl text-slate-800 tracking-tight">第 ${group.id} 組</span>
                             <div class="flex">
-                                <span class="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                                <span class="text-[11px] font-bold text-blue-500 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100">
                                     ${group.members.length} 人
                                 </span>
                             </div>
                         </div>
                         ${orderHtml}
                     </div>
-                    <div class="${listClass} border-t border-slate-50 pt-4">
+                    <div class="${listClass} border-t-2 border-slate-50 pt-5">
                         ${group.members.map(n => `<div class="font-bold text-slate-600 text-base py-0.5 whitespace-nowrap">· ${n}</div>`).join('')}
                     </div>`;
                 area.appendChild(div);
