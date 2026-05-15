@@ -19,7 +19,6 @@
             background-color: #f8fafc; 
             color: #334155; 
             -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
         }
         
         .neubrutalism { border: 2px solid #475569; box-shadow: 4px 4px 0px 0px rgba(71, 85, 105, 0.1); }
@@ -27,12 +26,9 @@
         
         .card-active { background-color: #ffffff; border: 2px solid #475569; }
         .card-leader { background-color: #fef3c7; border: 2px solid #d97706; color: #92400e; }
-        .card-inactive { background-color: #f1f5f9; border: 2px solid #e2e8f0; color: #94a3b8; text-decoration: line-through; }
+        .card-inactive { background-color: #f1f5f9; border: 2px solid #e2e8f0; color: #94a3b8; text-decoration: line-through; opacity: 0.7; }
         
-        @keyframes btnFlash {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
+        @keyframes btnFlash { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
         .btn-loading { animation: btnFlash 0.5s ease-in-out infinite; pointer-events: none; }
         
         @keyframes shuffleFlash { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.98); filter: brightness(1.2); } }
@@ -42,8 +38,7 @@
             background-color: #ef4444; color: white; padding: 2px 10px; 
             border-radius: 4px; font-weight: 900; 
             animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            font-size: 0.875rem;
-            white-space: nowrap;
+            font-size: 0.875rem; white-space: nowrap;
         }
         
         @keyframes popIn { 0% { transform: scale(0); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
@@ -51,69 +46,37 @@
         input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         
         .btn-stepper { 
-            width: 44px; height: 44px; 
-            display: flex; align-items: center; justify-content: center; 
+            width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; 
             background: white; border: 2px solid #e2e8f0; border-radius: 10px; 
-            font-weight: 900; color: #475569; 
-            transition: all 0.1s;
+            font-weight: 900; color: #475569; transition: all 0.1s;
         }
-        .btn-stepper:active { background: #f1f5f9; transform: scale(0.92); border-color: #cbd5e1; }
+        .btn-stepper:active { background: #f1f5f9; transform: scale(0.92); }
 
         .stat-tag {
-            display: inline-flex;
-            align-items: center;
-            padding: 4px 10px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 900;
-            border: 2px solid transparent;
+            display: inline-flex; align-items: center; padding: 4px 10px;
+            border-radius: 8px; font-size: 12px; font-weight: 900; border: 2px solid transparent;
         }
 
-        /* 輔助按鈕樣式 */
         .btn-aux {
-            flex: 1;
-            font-size: 12px;
-            font-weight: 900;
-            padding: 8px 0;
-            border-radius: 10px;
-            transition: all 0.2s;
-            border: 2px solid #e2e8f0;
-            background: white;
-            color: #64748b;
+            flex: 1; font-size: 12px; font-weight: 900; padding: 8px 0;
+            border-radius: 10px; transition: all 0.2s; border: 2px solid #e2e8f0;
+            background: white; color: #64748b;
         }
         .btn-aux:active { transform: scale(0.95); background: #f8fafc; }
         .btn-clear { color: #ef4444; border-color: #fee2e2; }
-        .btn-clear:active { background: #fef2f2; }
 
         .order-item-box {
-            background: white;
-            border: 2px solid #fde68a;
-            border-radius: 12px;
-            padding: 8px 16px;
-            min-width: 115px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            position: relative;
-            z-index: 10;
-        }
-
-        @media (min-width: 768px) {
-            .order-item-box { padding: 12px 32px; min-width: 170px; border-radius: 16px; }
+            background: white; border: 2px solid #fde68a; border-radius: 12px;
+            padding: 8px 16px; min-width: 115px; display: flex; flex-direction: column;
+            align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative; z-index: 10;
         }
 
         .arrow-container {
-            position: absolute;
-            right: 0; top: 0; bottom: 0; width: 0; 
+            position: absolute; right: 0; top: 0; bottom: 0; width: 0; 
             display: flex; align-items: center; justify-content: center;
-            pointer-events: none; z-index: 5;
-            transform: translateX(24px); 
+            pointer-events: none; z-index: 5; transform: translateX(24px); 
         }
-
-        @media (max-width: 768px) {
-            .arrow-container { transform: translateX(12px); }
-        }
+        @media (max-width: 768px) { .arrow-container { transform: translateX(12px); } }
     </style>
 </head>
 <body class="p-4 md:p-10 pb-20">
@@ -126,7 +89,6 @@
             <div class="lg:col-span-4 space-y-6">
                 <div class="space-y-3">
                     <textarea id="inputContent" rows="3" placeholder="貼上名單..." class="w-full p-4 border-2 border-slate-200 rounded-2xl focus:border-blue-400 focus:outline-none transition resize-none text-sm bg-white neubrutalism"></textarea>
-                    
                     <button onclick="addMembers()" class="w-full bg-slate-800 text-white font-bold py-4 rounded-xl hover:bg-slate-700 transition active:scale-[0.98]">匯入名單</button>
                     
                     <div class="flex gap-2">
@@ -136,16 +98,19 @@
                     </div>
                 </div>
                 
-                <div class="flex flex-wrap gap-2 py-2 border-b-2 border-slate-100">
-                    <div class="stat-tag bg-blue-50 text-blue-600 border-blue-100">總計 <span id="statTotal" class="ml-1">0</span></div>
-                    <div class="stat-tag bg-amber-50 text-amber-600 border-amber-100">★ <span id="statStar" class="ml-1">0</span></div>
-                    <div class="stat-tag bg-slate-100 text-slate-500 border-slate-200">餘 <span id="statOthers" class="ml-1">0</span></div>
+                <div class="bg-white p-4 rounded-2xl border-2 border-slate-100 space-y-4">
+                    <div class="flex flex-wrap gap-2 pb-2 border-b-2 border-slate-50">
+                        <div class="stat-tag bg-slate-100 text-slate-600 border-slate-200" title="名單內所有人">總名單 <span id="statAll" class="ml-1">0</span></div>
+                        <div class="stat-tag bg-blue-50 text-blue-600 border-blue-100" title="當前選取的人數">總計 <span id="statTotal" class="ml-1">0</span></div>
+                        <div class="stat-tag bg-amber-50 text-amber-600 border-amber-100" title="選取中的組長人數">★ <span id="statStar" class="ml-1">0</span></div>
+                        <div class="stat-tag bg-slate-50 text-slate-400 border-slate-100" title="總計 - 星星">餘 <span id="statOthers" class="ml-1">0</span></div>
+                    </div>
+                    
+                    <div id="memberList" class="flex flex-wrap gap-2 max-h-[500px] overflow-y-auto pr-2"></div>
                 </div>
-
-                <div id="memberList" class="flex flex-wrap gap-2 max-h-[400px] overflow-y-auto pr-2"></div>
             </div>
 
-            <div id="setup-section" class="lg:col-span-8 space-y-6">
+            <div class="lg:col-span-8 space-y-6">
                 <div class="bg-white p-4 md:p-5 rounded-2xl neubrutalism flex flex-col sm:flex-row items-stretch gap-4">
                     <div class="flex items-center justify-between bg-slate-50 p-2 px-5 rounded-xl border-2 border-slate-100 flex-1">
                         <span class="text-sm font-bold text-slate-500">組數</span>
@@ -197,31 +162,44 @@
 
         function toggleLeader(idx, e) { e.stopPropagation(); members[idx].isLeader = !members[idx].isLeader; save(); }
         function toggleMember(idx) { members[idx].present = !members[idx].present; save(); }
-        function removeMember(idx) { members.splice(idx, 1); save(); }
+        function removeMember(idx, e) { e.stopPropagation(); members.splice(idx, 1); save(); }
         function toggleAll(val) { members.forEach(m => m.present = val); save(); }
 
         function render() {
             const list = document.getElementById('memberList');
-            list.innerHTML = members.length === 0 ? '<div class="w-full py-10 text-center text-slate-300 italic text-sm">請匯入成員</div>' : '';
-            let activeCount = 0; let starCount = 0;
+            list.innerHTML = members.length === 0 ? '<div class="w-full py-10 text-center text-slate-300 italic text-sm">請匯入名單</div>' : '';
+            
+            let allCount = members.length; // 總名單：所有人
+            let totalActive = 0; // 總計：勾選中
+            let starCount = 0; // 星星：勾選中且組長
+            
             members.forEach((m, idx) => {
-                if(m.present) { activeCount++; if(m.isLeader) starCount++; }
+                if(m.present) { 
+                    totalActive++; 
+                    if(m.isLeader) starCount++; 
+                }
                 const div = document.createElement('div');
                 let cardStyle = m.present ? (m.isLeader ? 'card-leader' : 'card-active') : 'card-inactive';
-                div.className = `${cardStyle} px-3 py-1.5 rounded-lg cursor-pointer font-bold text-sm flex items-center gap-2`;
+                div.className = `${cardStyle} px-3 py-1.5 rounded-lg cursor-pointer font-bold text-sm flex items-center gap-2 transition-all`;
                 div.onclick = () => toggleMember(idx);
-                div.innerHTML = `<span class="${m.isLeader ? 'text-amber-600' : 'text-slate-300'}" onclick="toggleLeader(${idx}, event)">★</span>${m.name}<span class="text-slate-300 hover:text-red-400" onclick="event.stopPropagation(); removeMember(${idx})">×</span>`;
+                div.innerHTML = `
+                    <span class="${m.isLeader ? 'text-amber-600' : 'text-slate-300'} hover:scale-125 transition-transform" onclick="toggleLeader(${idx}, event)">★</span>
+                    <span>${m.name}</span>
+                    <span class="ml-auto text-slate-300 hover:text-red-400 font-black px-1" onclick="removeMember(${idx}, event)">×</span>
+                `;
                 list.appendChild(div);
             });
-            document.getElementById('statTotal').innerText = activeCount;
+            
+            document.getElementById('statAll').innerText = allCount;
+            document.getElementById('statTotal').innerText = totalActive;
             document.getElementById('statStar').innerText = starCount;
-            document.getElementById('statOthers').innerText = activeCount - starCount;
+            document.getElementById('statOthers').innerText = totalActive - starCount;
         }
 
         function shuffleAndGroup() {
             const activeOnes = members.filter(m => m.present);
             const count = parseInt(document.getElementById('groupCount').value);
-            if (activeOnes.length === 0) return alert('請先選人');
+            if (activeOnes.length === 0) return alert('請先選取名單');
             
             const btn = document.getElementById('btnShuffle');
             btn.classList.add('btn-loading');
@@ -237,7 +215,6 @@
                 document.getElementById('btnDrawOrder').disabled = false;
                 document.getElementById('orderSummary').classList.add('hidden');
                 renderResults();
-                
                 btn.classList.remove('btn-loading');
                 document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
             }, 1000);
@@ -250,7 +227,6 @@
             btn.disabled = true;
             orderSummary.classList.remove('hidden');
             visualBox.classList.add('is-shuffling-area');
-            
             orderSummary.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             let counter = 0;
@@ -307,9 +283,7 @@
                 div.className = 'bg-white p-5 md:p-6 rounded-2xl card-result flex flex-col relative';
                 div.innerHTML = `
                     <div class="flex justify-between items-start mb-4">
-                        <div class="flex flex-col">
-                            <span class="font-black text-xl md:text-2xl text-slate-800">第 ${group.id} 組</span>
-                        </div>
+                        <span class="font-black text-xl md:text-2xl text-slate-800">第 ${group.id} 組</span>
                         ${group.order ? `<div class="order-badge">順序 ${group.order}</div>` : ''}
                     </div>
                     <div class="${group.members.length > 6 ? 'member-cols' : 'space-y-1'} border-t-2 border-slate-50 pt-4">
@@ -320,7 +294,7 @@
         }
 
         function clearStorage() { 
-            if(confirm('確定要清空名單嗎？')) { 
+            if(confirm('確定要清空所有名單嗎？')) { 
                 members = []; currentGroups = []; save(); 
                 document.getElementById('resultArea').innerHTML = ''; 
                 document.getElementById('orderSummary').classList.add('hidden'); 
