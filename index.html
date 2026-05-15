@@ -1,285 +1,1415 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>抽籤分組工具</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap');
-        html { scroll-behavior: smooth; touch-action: manipulation; -webkit-text-size-adjust: 100%; }
-        body { font-family: 'Inter', 'Microsoft JhengHei', sans-serif; background-color: #f8fafc; color: #334155; }
-
-        .neubrutalism { border: 2px solid #475569; box-shadow: 4px 4px 0px 0px rgba(71, 85, 105, 0.1); }
-        .card-result { border: 2px solid #475569; box-shadow: 4px 4px 0px 0px rgba(71, 85, 105, 0.1); }
-        .card-active { background-color: #ffffff; border: 2px solid #475569; color: #334155; }
-        .card-leader { background-color: #fef3c7; border: 2px solid #d97706; color: #92400e; }
-        .card-inactive { background-color: #f1f5f9; border: 2px solid #e2e8f0; color: #94a3b8; text-decoration: line-through; opacity: 0.7; }
-
-        @keyframes btnFlash { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-        .btn-loading { animation: btnFlash 0.5s ease-in-out infinite; pointer-events: none; }
-
-        @keyframes shuffleFlash { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.98); filter: brightness(1.2); } }
-        .is-shuffling-area { animation: shuffleFlash 0.15s infinite; }
-
-        @keyframes popIn { 0% { transform: scale(0); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        .order-badge { background-color: #ef4444; color: white; padding: 2px 10px; border-radius: 4px; font-weight: 900; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-size: 0.875rem; }
-
-        .btn-stepper { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: white; border: 2px solid #e2e8f0; border-radius: 10px; font-weight: 900; }
-        .btn-stepper:active { transform: scale(0.92); }
-        .stat-tag { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 900; }
-        .btn-aux { flex: 1; font-size: 12px; font-weight: 900; padding: 8px 0; border-radius: 10px; border: 2px solid #e2e8f0; background: white; color: #64748b; }
-
-        /* 三欄固定等寬，不讓內容撐開 */
-        #memberList {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 8px;
-        }
-        #memberList > div {
-            min-width: 0;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        /* 抽順序視覺樣式 */
-        .order-item-box {
-            background: white; border: 2px solid #fde68a; border-radius: 12px;
-            padding: 8px 16px; min-width: 115px; display: flex; flex-direction: column;
-            align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative; z-index: 10;
-        }
-        .arrow-container {
-            position: absolute; right: 0; top: 0; bottom: 0; width: 0;
-            display: flex; align-items: center; justify-content: center;
-            pointer-events: none; z-index: 5; transform: translateX(24px);
-        }
-        @media (max-width: 768px) { .arrow-container { transform: translateX(12px); } }
-    </style>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2685.5">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
 </head>
-<body class="p-4 md:p-10 pb-20">
-    <div class="max-w-6xl mx-auto">
-        <header class="mb-8">
-            <h1 class="text-3xl md:text-4xl font-black text-slate-800 tracking-tight">抽籤分組工具 <span class="text-blue-500">.</span></h1>
-        </header>
-
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
-            <div class="lg:col-span-5 space-y-6">
-                <div class="space-y-3">
-                    <textarea id="inputContent" rows="4" placeholder="貼上名單（支援換行、空格、逗號、頓號混合）..." class="w-full p-4 border-2 border-slate-200 rounded-2xl focus:border-blue-400 focus:outline-none transition resize-none text-sm bg-white neubrutalism"></textarea>
-                    <button onclick="addMembers()" class="w-full bg-slate-800 text-white font-bold py-4 rounded-xl hover:bg-slate-700 transition active:scale-[0.98]">匯入名單</button>
-                    <div class="flex gap-2">
-                        <button onclick="toggleAll(true)" class="btn-aux">全選</button>
-                        <button onclick="toggleAll(false)" class="btn-aux">取消</button>
-                        <button onclick="clearStorage()" class="btn-aux text-red-500 border-red-50">清除名單</button>
-                    </div>
-                </div>
-
-                <div class="bg-white p-4 rounded-2xl border-2 border-slate-100 space-y-4">
-                    <div class="flex flex-wrap gap-2 pb-2 border-b-2 border-slate-50">
-                        <div class="stat-tag bg-slate-100 text-slate-600">總名單 <span id="statAll">0</span></div>
-                        <div class="stat-tag bg-blue-50 text-blue-600">總計 <span id="statTotal">0</span></div>
-                        <div class="stat-tag bg-amber-50 text-amber-600">★ <span id="statStar">0</span></div>
-                        <div class="stat-tag bg-slate-50 text-slate-400">餘 <span id="statOthers">0</span></div>
-                    </div>
-                    <div id="memberList" class="max-h-[500px] overflow-y-auto pr-1"></div>
-                </div>
-            </div>
-
-            <div class="lg:col-span-7 space-y-6">
-                <div class="bg-white p-4 md:p-5 rounded-2xl neubrutalism flex flex-col sm:flex-row items-stretch gap-4">
-                    <div class="flex items-center justify-between bg-slate-50 p-2 px-5 rounded-xl border-2 border-slate-100 flex-1">
-                        <span class="text-sm font-bold text-slate-500">組數</span>
-                        <div class="flex items-center gap-4">
-                            <button onclick="changeGroupCount(-1)" class="btn-stepper">－</button>
-                            <input id="groupCount" type="number" value="2" readonly class="w-10 bg-transparent font-black text-2xl text-slate-800 text-center">
-                            <button onclick="changeGroupCount(1)" class="btn-stepper">＋</button>
-                        </div>
-                    </div>
-                    <button id="btnShuffle" onclick="shuffleAndGroup()" class="flex-[1.5] bg-blue-500 text-white font-black py-4 rounded-xl text-lg transition-all active:scale-[0.98]">開始分組</button>
-                    <button id="btnDrawOrder" onclick="drawGroupOrderWithEffect()" disabled class="flex-[1.2] bg-amber-400 text-slate-800 font-black py-4 rounded-xl text-lg active:scale-[0.98] disabled:opacity-30">抽順序</button>
-                </div>
-
-                <div id="orderSummary" class="hidden">
-                    <div class="bg-amber-50 border-2 border-amber-100 p-6 rounded-[32px]" id="orderVisualBox">
-                        <div class="grid grid-cols-2 gap-y-6 gap-x-6 md:gap-x-12 max-w-lg mx-auto relative" id="orderPath"></div>
-                    </div>
-                </div>
-
-                <div id="resultArea" class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 scroll-mt-10"></div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let members = JSON.parse(localStorage.getItem('my_group_tool_v24') || '[]');
-        let currentGroups = [];
-
-        function save() { localStorage.setItem('my_group_tool_v24', JSON.stringify(members)); render(); }
-
-        function addMembers() {
-            const input = document.getElementById('inputContent').value;
-            if (!input.trim()) return;
-
-            // 修正：加入「、」（日文/中文頓號）作為分隔符號
-            const lines = input.split(/\n/);
-            lines.forEach(line => {
-                if (!line.trim()) return;
-                const items = line.split(/[,，\s\t　;；、]+/);
-                items.forEach(item => {
-                    let cleanName = item.trim();
-                    cleanName = cleanName.replace(/^[\d\s\.\-、]+/, '').trim();
-                    if (cleanName && !members.some(m => m.name === cleanName)) {
-                        members.push({ name: cleanName, present: true, isLeader: false });
-                    }
-                });
-            });
-            document.getElementById('inputContent').value = '';
-            save();
-        }
-
-        function render() {
-            const list = document.getElementById('memberList');
-            if (members.length === 0) {
-                list.style.display = 'block';
-                list.innerHTML = '<div class="w-full py-10 text-center text-slate-300 italic text-sm">請匯入名單</div>';
-            } else {
-                list.style.display = 'grid';
-                list.innerHTML = '';
-            }
-
-            let totalActive = 0, starCount = 0;
-            members.forEach((m, idx) => {
-                if (m.present) { totalActive++; if (m.isLeader) starCount++; }
-                const div = document.createElement('div');
-                div.className = `${m.present ? (m.isLeader ? 'card-leader' : 'card-active') : 'card-inactive'} px-2 py-2 rounded-lg cursor-pointer font-bold text-[13px] flex items-center justify-between transition-all`;
-                // 固定三欄：防止內容撐開
-                div.style.cssText = 'min-width:0; width:100%; overflow:hidden;';
-                div.onclick = () => { members[idx].present = !members[idx].present; save(); };
-                div.innerHTML = `
-                    <div class="flex items-center gap-1 overflow-hidden" style="min-width:0; flex:1;">
-                        <span class="flex-shrink-0 ${m.isLeader ? 'text-amber-600' : 'text-slate-300'}" onclick="event.stopPropagation(); members[${idx}].isLeader = !members[${idx}].isLeader; save();">★</span>
-                        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${m.name}</span>
-                    </div>
-                    <span class="flex-shrink-0 text-slate-300 hover:text-red-400 font-black px-0.5" onclick="event.stopPropagation(); members.splice(${idx}, 1); save();">×</span>
-                `;
-                list.appendChild(div);
-            });
-
-            document.getElementById('statAll').innerText = members.length;
-            document.getElementById('statTotal').innerText = totalActive;
-            document.getElementById('statStar').innerText = starCount;
-            document.getElementById('statOthers').innerText = totalActive - starCount;
-        }
-
-        function changeGroupCount(val) {
-            const input = document.getElementById('groupCount');
-            let current = parseInt(input.value);
-            if (current + val >= 1) input.value = current + val;
-        }
-
-        function shuffleAndGroup() {
-            const activeOnes = members.filter(m => m.present);
-            const count = parseInt(document.getElementById('groupCount').value);
-            if (activeOnes.length === 0) return alert('請先選取名單');
-
-            const btn = document.getElementById('btnShuffle');
-            btn.classList.add('btn-loading');
-
-            setTimeout(() => {
-                const leaders = activeOnes.filter(m => m.isLeader).sort(() => Math.random() - 0.5);
-                const regulars = activeOnes.filter(m => !m.isLeader).sort(() => Math.random() - 0.5);
-
-                currentGroups = Array.from({ length: Math.min(count, activeOnes.length) }, (_, i) => ({ id: i + 1, members: [], order: null }));
-                leaders.forEach((m, i) => currentGroups[i % currentGroups.length].members.push({ name: m.name, isLeader: true }));
-                regulars.forEach((m, i) => currentGroups[(leaders.length + i) % currentGroups.length].members.push({ name: m.name, isLeader: false }));
-
-                document.getElementById('btnDrawOrder').disabled = false;
-                document.getElementById('orderSummary').classList.add('hidden');
-                renderResults();
-                btn.classList.remove('btn-loading');
-                document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 800);
-        }
-
-        function drawGroupOrderWithEffect() {
-            const btn = document.getElementById('btnDrawOrder');
-            const visualBox = document.getElementById('orderVisualBox');
-            const orderSummary = document.getElementById('orderSummary');
-            btn.disabled = true;
-            orderSummary.classList.remove('hidden');
-            visualBox.classList.add('is-shuffling-area');
-
-            let counter = 0;
-            const interval = setInterval(() => {
-                const tempGroups = [...currentGroups].sort(() => Math.random() - 0.5);
-                renderOrderPath(tempGroups, true);
-                counter++;
-                if (counter > 15) {
-                    clearInterval(interval);
-                    visualBox.classList.remove('is-shuffling-area');
-                    const finalOrder = Array.from({ length: currentGroups.length }, (_, i) => i + 1).sort(() => Math.random() - 0.5);
-                    currentGroups.forEach((group, i) => group.order = finalOrder[i]);
-                    renderResults();
-                    renderOrderSummary();
-                    btn.disabled = false;
-                }
-            }, 80);
-        }
-
-        function renderOrderPath(groups, isTemp = false) {
-            const path = document.getElementById('orderPath');
-            path.innerHTML = '';
-            groups.forEach((g, i) => {
-                const isLast = i === groups.length - 1;
-                const isLeftColumn = i % 2 === 0;
-                const colSpan = (isLast && isLeftColumn) ? 'col-span-2' : 'col-span-1';
-                const wrapper = document.createElement('div');
-                wrapper.className = `${colSpan} relative flex items-center justify-center`;
-                let arrowHtml = (isLeftColumn && !isLast) ? `<div class="arrow-container"><span class="text-amber-500 font-black text-2xl md:text-4xl">⟶</span></div>` : '';
-                wrapper.innerHTML = `
-                    <div class="order-item-box">
-                        <span class="text-[10px] text-amber-600 font-bold mb-1">第 ${i + 1} 順位</span>
-                        <span class="font-black text-lg text-slate-800">第 ${isTemp ? Math.floor(Math.random() * groups.length) + 1 : g.id} 組</span>
-                    </div>
-                    ${arrowHtml}
-                `;
-                path.appendChild(wrapper);
-            });
-        }
-
-        function renderOrderSummary() {
-            const sorted = [...currentGroups].sort((a, b) => a.order - b.order);
-            renderOrderPath(sorted);
-        }
-
-        function renderResults() {
-            const area = document.getElementById('resultArea');
-            area.innerHTML = '';
-            currentGroups.forEach((group) => {
-                const div = document.createElement('div');
-                div.className = 'bg-white p-5 rounded-2xl card-result flex flex-col relative';
-                div.innerHTML = `
-                    <div class="flex justify-between items-start mb-4">
-                        <span class="font-black text-xl text-slate-800">第 ${group.id} 組</span>
-                        ${group.order ? `<div class="order-badge">順序 ${group.order}</div>` : ''}
-                    </div>
-                    <div class="space-y-1 border-t-2 border-slate-50 pt-4">
-                        ${group.members.map(m => `<div class="font-bold ${m.isLeader ? 'text-amber-600' : 'text-slate-600'}">${m.isLeader ? '★' : '·'} ${m.name}</div>`).join('')}
-                    </div>`;
-                area.appendChild(div);
-            });
-        }
-
-        function toggleAll(val) { members.forEach(m => m.present = val); save(); }
-        function clearStorage() {
-            if (confirm('確定要清空所有名單嗎？')) {
-                members = []; save();
-                document.getElementById('resultArea').innerHTML = '';
-                document.getElementById('orderSummary').classList.add('hidden');
-            }
-        }
-
-        render();
-    </script>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="zh-TW"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1">&lt;meta charset="UTF-8"&gt;</p>
+<p class="p1">&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
+<p class="p1">&lt;title&gt;點名管理系統&lt;/title&gt;</p>
+<p class="p1">&lt;link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&amp;family=Roboto:wght@400;500;700&amp;display=swap" rel="stylesheet"&gt;</p>
+<p class="p1">&lt;script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"&gt;&lt;/script&gt;</p>
+<p class="p1">&lt;script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"&gt;&lt;/script&gt;</p>
+<p class="p1">&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>:root {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--bg: #f8f7f4;<span class="Apple-converted-space">          </span>/* 溫潤的日系淺米色 */</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--surface: #ffffff;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--surface2: #f2f0eb;<span class="Apple-converted-space">    </span>/* 燕麥暖灰 */</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--border: #e6e3dc; <span class="Apple-converted-space">    </span>/* 溫和不生硬的邊框 */</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--text: #2c2a27;<span class="Apple-converted-space">        </span>/* 沉穩墨茶色 */</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--text2: #5c5852; <span class="Apple-converted-space">      </span>/* 次要內文色 */</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--text3: #9c968f; <span class="Apple-converted-space">      </span>/* 輔助灰色 */</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>/* 抽籤分組經典優雅色系 */</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--accent: #2c5234;<span class="Apple-converted-space">      </span>/* 竹綠 / 森林深綠 */</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--accent-light: #f0f4f1;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--accent2: #b8621d; <span class="Apple-converted-space">    </span>/* 琥珀 / 駝色 */</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--accent2-light: #faf2eb;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--red: #96352b; <span class="Apple-converted-space">        </span>/* 磚紅 / 赭石 */</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--red-light: #f9ebea;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--yellow: #b58900;<span class="Apple-converted-space">      </span>/* 芥末黃 / 暮雲 */</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--yellow-light: #fbf7eb;</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>--radius: 6px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--shadow: 0 4px 20px rgba(44, 42, 39, 0.04), 0 1px 3px rgba(44, 42, 39, 0.02);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--shadow-sm: 0 2px 8px rgba(44, 42, 39, 0.03);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>* { box-sizing: border-box; margin: 0; padding: 0; }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>body {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-family: 'Noto Sans TC', sans-serif;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--bg);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>color: var(--text);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>min-height: 100vh;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-size: 15px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>line-height: 1.6;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>-webkit-font-smoothing: antialiased;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>/* ── NAV ── */</p>
+<p class="p1"><span class="Apple-converted-space">  </span>nav {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--surface);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-bottom: 1px solid var(--border);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>position: sticky; top: 0; z-index: 100;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.nav-inner {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>display: flex; align-items: center; gap: 8px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>padding: 0 20px; overflow-x: auto;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>scrollbar-width: none;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>max-width: 720px; margin: 0 auto;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.nav-inner::-webkit-scrollbar { display: none; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.nav-btn {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>display: flex; align-items: center;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>padding: 18px 16px 14px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-size: 14px; font-weight: 500;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>color: var(--text2);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border: none; background: none;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-bottom: 2px solid transparent;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>cursor: pointer; white-space: nowrap;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>letter-spacing: 0.05em;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>transition: all 0.25s ease;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.nav-btn.active {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>color: var(--accent);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-weight: 700;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-bottom-color: var(--accent);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>/* ── PAGES ── */</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.page { display: none; padding: 32px 20px 80px; max-width: 720px; margin: 0 auto; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.page.active { display: block; }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>/* ── CARDS ── */</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.card {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--surface);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border: 1px solid var(--border);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-radius: var(--radius);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>padding: 24px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>margin-bottom: 24px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>box-shadow: var(--shadow);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.card-title {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-size: 14px; font-weight: 700;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>color: var(--text); letter-spacing: 0.08em;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>margin-bottom: 20px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>display: flex; align-items: center; justify-content: space-between;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.card-title::before {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>content: ''; display: inline-block; width: 3px; height: 14px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--accent); margin-right: 8px; border-radius: 2px;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.title-text-wrapper { flex: 1; display: flex; align-items: center; }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>/* ── DASHBOARD STATS ── */</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.stats-grid {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>display: grid; grid-template-columns: 1fr 1fr;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>gap: 16px; margin-bottom: 24px;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.stat-card {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--surface);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border: 1px solid var(--border);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-radius: var(--radius);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>padding: 20px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>box-shadow: var(--shadow-sm);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.stat-num {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-size: 28px; font-weight: 700;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-family: 'Roboto', 'Noto Sans TC', sans-serif; /* 改用 Google 日曆風格字體 */</p>
+<p class="p1"><span class="Apple-converted-space">    </span>line-height: 1;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>color: var(--text);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.stat-label { font-size: 12px; font-weight: 500; color: var(--text2); margin-top: 8px; letter-spacing: 0.05em; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.stat-card.green .stat-num { color: var(--accent); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.stat-card.orange .stat-num { color: var(--accent2); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.stat-card.red .stat-num { color: var(--red); }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>/* ── FILTER TABS ── */</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.filter-tabs {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>scrollbar-width: none;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.filter-tabs::-webkit-scrollbar { display: none; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.filter-tab {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--surface); color: var(--text2); font-size: 13px; cursor: pointer;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>white-space: nowrap; transition: all 0.2s;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.filter-tab.active {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--accent); color: #fff; border-color: var(--accent);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>/* ── BUTTONS ── */</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.btn {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>display: inline-flex; align-items: center; justify-content: center; gap: 6px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>padding: 10px 20px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-radius: var(--radius);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-size: 14px; font-weight: 500;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border: 1px solid var(--border); cursor: pointer;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--surface); color: var(--text);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>transition: all 0.2s ease; white-space: nowrap;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.btn:hover { background: var(--surface2); border-color: #d1cdc5; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.btn-primary:hover { background: #203d27; border-color: #203d27; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.btn-secondary { background: var(--bg); color: var(--text2); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.btn-danger { background: var(--surface); color: var(--red); border-color: var(--border); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.btn-danger:hover { background: var(--red-light); border-color: var(--red); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.btn-sm { padding: 6px 14px; font-size: 13px; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.btn-block { width: 100%; }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>/* ── FORM ── */</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.form-group { margin-bottom: 16px; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.form-row { display: flex; gap: 12px; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.form-row .form-group { flex: 1; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>label { display: block; font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 6px; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>input, select, textarea {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>width: 100%; padding: 11px 14px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border: 1px solid var(--border); border-radius: var(--radius);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-size: 14px; font-family: inherit; font-weight: 400;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--surface); color: var(--text);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>transition: all 0.2s ease;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>select {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background-image: url("data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%235c5852' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'&gt;&lt;polyline points='6 9 12 15 18 9'&gt;&lt;/polyline&gt;&lt;/svg&gt;");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background-repeat: no-repeat; background-position: right 12px center; background-size: 14px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>padding-right: 36px; appearance: none;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>textarea { resize: vertical; min-height: 90px; line-height: 1.5; }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>/* ── RADIO GROUP ── */</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.radio-group { display: flex; gap: 16px; padding: 10px 0; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.radio-label { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text); cursor: pointer; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.radio-label input { width: auto; margin: 0; }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>/* ── LIST ITEMS ── */</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.member-item {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>display: flex; align-items: center; gap: 14px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>padding: 16px 0; border-bottom: 1px solid var(--border);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.member-item:last-child { border-bottom: none; }</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>.num-badge {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>width: 28px; height: 28px; border-radius: 4px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--surface2); color: var(--text2);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border: 1px solid var(--border);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>display: flex; align-items: center; justify-content: center;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-family: 'Roboto', sans-serif; font-weight: 500; font-size: 13px; flex-shrink: 0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>.member-info { flex: 1; min-width: 0; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.member-name { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.member-meta { font-size: 13px; color: var(--text3); margin-top: 2px; font-family: 'Roboto', 'Noto Sans TC', sans-serif; }</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>.course-badge {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 4px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--accent-light); color: var(--accent); border: 1px solid rgba(44,82,52,0.15);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>white-space: nowrap;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.role-badge {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 4px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--accent2-light); color: var(--accent2); border: 1px solid rgba(184,98,29,0.15);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>white-space: nowrap;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.gender-tag { font-size: 12px; color: var(--text3); font-weight: normal; }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>/* ── COURSE LIST ITEM &amp; HIGHLIGHT EFFECT ── */</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.session-item {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>display: flex; align-items: center; gap: 16px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>padding: 18px; background: var(--surface); border-radius: var(--radius);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>margin-bottom: 14px; border: 1px solid var(--border);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>box-shadow: var(--shadow-sm); transition: all 0.4s ease;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>scroll-margin-top: 80px;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.session-item:hover { border-color: #d1cdc5; }</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>.session-item.highlight-active {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--surface2) !important;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-color: var(--accent) !important;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>box-shadow: 0 0 12px rgba(44, 82, 52, 0.15);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>transform: translateY(-2px);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>.session-date-box {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--surface2); color: var(--text); border: 1px solid var(--border);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-radius: var(--radius); padding: 8px 10px; text-align: center; flex-shrink: 0; min-width: 56px;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.session-month { font-size: 11px; font-weight: 500; color: var(--text2); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.session-day { font-size: 20px; font-weight: 700; line-height: 1; font-family: 'Roboto', sans-serif; margin-top: 2px; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.session-info { flex: 1; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.session-name { font-weight: 700; margin-bottom: 4px; font-size: 15px; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.session-sub { font-size: 13px; color: var(--text2); font-family: 'Roboto', 'Noto Sans TC', sans-serif; }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>/* ── GOOGLE CALENDAR MONTH VIEW ── */</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.calendar-month-grid {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>display: grid;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>grid-template-columns: repeat(7, 1fr);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-top: 1px solid var(--border);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-left: 1px solid var(--border);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--surface);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-radius: var(--radius);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>overflow: hidden;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.calendar-weekday {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--surface2);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>padding: 8px 4px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>text-align: center;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-size: 12px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-weight: 700;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>color: var(--text2);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-right: 1px solid var(--border);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-bottom: 1px solid var(--border);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.calendar-weekday.weekend-head {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>color: var(--red);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: #fdfaf9;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>.calendar-day-cell {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>min-height: 85px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>padding: 6px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-right: 1px solid var(--border);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-bottom: 1px solid var(--border);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>display: flex;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>flex-direction: column;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>justify-content: flex-start;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--surface);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>transition: background 0.2s;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.calendar-day-cell.has-events {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>cursor: pointer;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.calendar-day-cell.has-events:hover {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--accent-light);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>.calendar-day-cell.sat-cell, .calendar-day-cell.sun-cell {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: #fffcfb;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.calendar-day-cell.sat-cell .calendar-day-num, .calendar-day-cell.sun-cell .calendar-day-num {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>color: var(--red);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-weight: 700;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>.calendar-day-cell.holiday-cell .calendar-day-num {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>color: var(--red) !important;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-weight: 700;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.holiday-label {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-size: 10px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>color: var(--red);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-weight: 500;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>margin-bottom: 2px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>line-height: 1.1;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>overflow: hidden;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>text-overflow: ellipsis;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>white-space: nowrap;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>.calendar-day-cell.other-month {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: #fafaf9 !important;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>color: var(--text3) !important;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.calendar-day-cell.other-month .calendar-day-num {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>color: var(--text3) !important;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>.calendar-day-num {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-family: 'Roboto', sans-serif; /* 改用 Google 日曆風格字體 */</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-size: 12px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-weight: 500;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>margin-bottom: 4px;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.calendar-day-cell.today .calendar-day-num {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>color: var(--accent);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-weight: 700;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-bottom: 2px solid var(--accent);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.calendar-events-container {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>display: flex;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>flex-direction: column;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>gap: 3px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>overflow: hidden;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.calendar-event-tag {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-size: 11px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>padding: 2px 4px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--accent-light);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>color: var(--accent);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-radius: 3px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>white-space: nowrap;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>overflow: hidden;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>text-overflow: ellipsis;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-left: 2px solid var(--accent);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>line-height: 1.2;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>/* ── ATTENDANCE ── */</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.qr-section {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>padding: 24px; text-align: center; margin-bottom: 24px; box-shadow: var(--shadow);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>#qrcode { display: inline-block; margin: 16px auto; padding: 12px; background: #fff; border: 1px solid var(--border); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.checkin-code {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-family: 'Roboto', sans-serif; font-size: 32px; font-weight: 700;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>letter-spacing: 6px; color: var(--accent); background: var(--accent-light);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border: 1px solid rgba(44,82,52,0.15); border-radius: var(--radius);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>padding: 8px 20px; display: inline-block; margin: 8px 0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.progress-bar-wrap { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; height: 8px; margin: 14px 0; overflow: hidden; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.progress-bar-fill { background: var(--accent); height: 100%; transition: width 0.4s ease; }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>.att-row { display: flex; align-items: center; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--border); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.att-row:last-child { border-bottom: none; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.att-name { font-weight: 700; font-size: 15px; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.att-id { font-size: 12px; color: var(--text3); font-family: 'Roboto', 'Noto Sans TC', sans-serif; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.att-btns { display: flex; gap: 6px; margin-left: auto; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.att-btn {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>padding: 6px 14px; border-radius: 4px; font-size: 13px; font-weight: 500;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>border: 1px solid var(--border); background: var(--surface); color: var(--text2);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>cursor: pointer; transition: all 0.15s;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.att-btn.present.active { background: var(--accent);<span class="Apple-converted-space">  </span>color: #fff; border-color: var(--accent); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.att-btn.leave.active <span class="Apple-converted-space">  </span>{ background: var(--accent2); color: #fff; border-color: var(--accent2); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.att-btn.absent.active<span class="Apple-converted-space">  </span>{ background: var(--red); <span class="Apple-converted-space">    </span>color: #fff; border-color: var(--red); }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>/* ── TABLE WRAP ── */</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.table-wrap {<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>overflow-x: auto;<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>border: 1px solid var(--border);<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-radius: var(--radius);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--surface);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>-webkit-overflow-scrolling: touch;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>table { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--surface); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>th {<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--surface2);<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>padding: 14px 12px;<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>text-align: left;<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-weight: 700;<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>color: var(--text);<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-bottom: 1px solid var(--border);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>white-space: nowrap;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>td {<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>padding: 14px 12px;<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>border-bottom: 1px solid var(--border);<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>color: var(--text2);<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>vertical-align: middle;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>transition: background 0.15s;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>.col-seq { width: 35px; min-width: 35px; text-align: center; white-space: nowrap; font-family: 'Roboto', sans-serif; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.col-name { width: 70px; min-width: 70px; white-space: nowrap; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.col-gender { width: 50px; min-width: 50px; text-align: center; white-space: nowrap; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.col-id { width: 85px; min-width: 85px; white-space: nowrap; font-family: 'Roboto', 'Noto Sans TC', sans-serif; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.col-type { min-width: 80px; white-space: nowrap; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.col-role { min-width: 70px; white-space: nowrap; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.col-num { min-width: 55px; text-align: center; white-space: nowrap; font-family: 'Roboto', sans-serif; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.col-rate { min-width: 70px; text-align: center; white-space: nowrap; }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>tr.clickable-row { cursor: pointer; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>tr.clickable-row:hover td { background: #faf9f6; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>tr.clickable-row.row-selected td { background: var(--surface2) !important; color: var(--text) !important; }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>.pct { font-family: 'Roboto', sans-serif; font-weight: 700; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.pct.high { color: var(--accent); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.pct.mid<span class="Apple-converted-space">  </span>{ color: var(--accent2); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.pct.low<span class="Apple-converted-space">  </span>{ color: var(--red); }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>/* ── MODAL ── */</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.modal-overlay {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>display: none; position: fixed; inset: 0; background: rgba(44, 42, 39, 0.4);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>backdrop-filter: blur(2px); z-index: 200; align-items: flex-end;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.modal-overlay.open { display: flex; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.modal {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--surface); border-radius: var(--radius) var(--radius) 0 0;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>padding: 24px 24px 40px; width: 100%; max-width: 720px; margin: 0 auto;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>max-height: 85vh; overflow-y: auto;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.modal-title { font-size: 16px; font-weight: 700; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.close-btn { background: none; border: none; cursor: pointer; width: 32px; height: 32px; font-size: 18px; color: var(--text3); }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>#toast {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background: var(--text); color: #fff; padding: 12px 28px; border-radius: var(--radius);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-size: 13px; z-index: 999; opacity: 0; transition: opacity 0.25s; pointer-events: none;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>#toast.show { opacity: 1; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.empty-state { text-align: center; padding: 32px 20px; color: var(--text3); font-size: 14px; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.empty-dot { display: inline-block; width: 6px; height: 6px; background: var(--border); border-radius: 50%; margin-bottom: 8px; }</p>
+<p class="p1">&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;nav&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="nav-inner"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;button class="nav-btn active" onclick="switchPage('dashboard')" id="nav-dashboard"&gt;儀表板&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;button class="nav-btn" onclick="switchPage('members')" id="nav-members"&gt;組員管理&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;button class="nav-btn" onclick="switchPage('sessions')" id="nav-sessions"&gt;課程管理&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;button class="nav-btn" onclick="switchPage('attendance')" id="nav-attendance"&gt;點名功能&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;button class="nav-btn" onclick="switchPage('stats')" id="nav-stats"&gt;統計報表&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p1">&lt;/nav&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;div id="toast"&gt;&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;div id="page-dashboard" class="page active"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div style="padding: 6px 0 24px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div style="font-size: 13px; color: var(--text3); font-weight: 500;" id="today-date"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div style="font-size: 24px; font-weight: 700; margin-top: 4px;"&gt;點名管理系統&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="stats-grid"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="stat-card"&gt;&lt;div class="stat-num" id="stat-members"&gt;0&lt;/div&gt;&lt;div class="stat-label"&gt;組員總人數&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="stat-card green"&gt;&lt;div class="stat-num" id="stat-rate"&gt;—&lt;/div&gt;&lt;div class="stat-label"&gt;本月出席率&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="stat-card orange"&gt;&lt;div class="stat-num" id="stat-sessions"&gt;0&lt;/div&gt;&lt;div class="stat-label"&gt;總課程堂數&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="stat-card red"&gt;&lt;div class="stat-num" id="stat-absent"&gt;0&lt;/div&gt;&lt;div class="stat-label"&gt;本月缺席人次&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p1">&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;div id="page-members" class="page"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="section-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div style="font-size: 20px; font-weight: 700;"&gt;組員管理&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div style="display:flex; gap:8px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;button class="btn btn-secondary btn-sm" onclick="openCourseTypeModal()"&gt;＋ 管理課程類別&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;button class="btn btn-primary btn-sm" onclick="openMemberModal()"&gt;＋ 手動新增組員&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="card-title"&gt;&lt;div class="title-text-wrapper"&gt;智慧姓名名單快速匯入&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div style="font-size:13px; color:var(--text2); margin-bottom:12px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>可直接貼上包含數字、逗號、頓號或分行的名單。系統會自動過濾並精準提取姓名。</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="form-row"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="form-group"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label&gt;匯入的課程類別 (班別)&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;select id="import-course-type"&gt;&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="form-group"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label&gt;預設組員身份類別&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;select id="import-role-type"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;option value="組員"&gt;組員&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;option value="窗口"&gt;窗口&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;option value="輔導"&gt;輔導&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;textarea id="import-text" placeholder="例：1. 陳小明, 2. 李美華、3. 王大同" rows="3"&gt;&lt;/textarea&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="importMembersSmart()"&gt;解析並快速匯入&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="filter-tabs" id="member-course-filters"&gt;&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="member-list"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p1">&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;div id="page-sessions" class="page"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="section-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div style="font-size: 20px; font-weight: 700;"&gt;課程管理&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;button class="btn btn-primary btn-sm" onclick="openSessionModal()"&gt;＋ 新增單堂課程&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="card" style="padding: 16px 20px; margin-bottom:16px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div style="display:flex; justify-content:space-between; align-items:center;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;button class="btn btn-secondary btn-sm" onclick="changeSessionMonth(-1)"&gt;◀ 上個月&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div style="text-align: center;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div style="font-weight:700; font-size:16px;" id="session-month-title"&gt;2026 年 5 月&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div style="font-size:12px; color:var(--accent); font-weight:500; margin-top:2px;" id="session-month-count"&gt;本月總計：0 堂課程&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;button class="btn btn-secondary btn-sm" onclick="changeSessionMonth(1)"&gt;下個月 ▶&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="card" style="padding: 16px; margin-bottom: 24px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="card-title"&gt;&lt;div class="title-text-wrapper"&gt;月份日曆檢視&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="calendar-month-grid" id="calendar-grid"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--text2); letter-spacing: 0.05em;"&gt;排定課程詳細清單&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div id="session-list"&gt;&lt;/div&gt;</p>
+<p class="p1">&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;div id="page-attendance" class="page"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div style="font-size: 20px; font-weight: 700; margin-bottom:20px;"&gt;點名功能&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="form-row"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="form-group" style="flex:1;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label&gt;選擇月份區間&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;select id="att-month-filter" onchange="renderAttendanceSelector()"&gt;&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="form-group" style="flex:2;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label&gt;選擇當週要點名的課程&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;select id="att-session-select" onchange="loadAttendance()"&gt;&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div id="att-content" style="display:none;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="qr-section"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div id="qrcode"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div&gt;&lt;div class="checkin-code" id="checkin-code-display"&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:13px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;span style="font-weight:700;"&gt;本堂點名進度&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;span class="pct" id="att-progress-label"&gt;0 / 0 人&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="progress-bar-wrap"&gt;&lt;div class="progress-bar-fill" id="att-progress-bar"&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div id="att-list"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;button class="btn btn-primary btn-block" onclick="saveAttendance()"&gt;儲存點名紀錄&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p1">&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;div id="page-stats" class="page"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div style="font-size: 20px; font-weight: 700; margin-bottom:20px;"&gt;統計報表&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div style="display:flex; gap:8px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;select id="stats-year" onchange="renderStats()"&gt;&lt;option value="2026"&gt;2026 年&lt;/option&gt;&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;select id="stats-month" onchange="renderStats()"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="0"&gt;整年度數據&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="1"&gt;1 月&lt;/option&gt;&lt;option value="2"&gt;2 月&lt;/option&gt;&lt;option value="3"&gt;3 月&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="4"&gt;4 月&lt;/option&gt;&lt;option value="5"&gt;5 月&lt;/option&gt;&lt;option value="6"&gt;6 月&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="7"&gt;7 月&lt;/option&gt;&lt;option value="8"&gt;8 月&lt;/option&gt;&lt;option value="9"&gt;9 月&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="10"&gt;10 月&lt;/option&gt;&lt;option value="11"&gt;11 月&lt;/option&gt;&lt;option value="12"&gt;12 月&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div id="stats-summary" class="stats-grid" style="margin-bottom:16px;"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="card" style="padding:16px 0;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="table-wrap"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;table id="stats-table"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;thead&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;tr&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;th class="col-seq"&gt;序&lt;/th&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;th class="col-name"&gt;姓名&lt;/th&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;th class="col-gender"&gt;性別&lt;/th&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;th class="col-id"&gt;研修代號&lt;/th&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;th class="col-type"&gt;類別&lt;/th&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;th class="col-role"&gt;身分&lt;/th&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;th class="col-num"&gt;出席&lt;/th&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;th class="col-num"&gt;缺席&lt;/th&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;th class="col-num"&gt;請假&lt;/th&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;th class="col-rate"&gt;出席率&lt;/th&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;/tr&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/thead&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;tbody id="stats-tbody"&gt;&lt;/tbody&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/table&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p1">&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;div class="modal-overlay" id="modal-member"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="modal"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="modal-header"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="modal-title" id="modal-member-title"&gt;組員資料填寫&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;button class="close-btn" onclick="closeModal('modal-member')"&gt;✕&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;input type="hidden" id="edit-member-id"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="form-group"&gt;&lt;label&gt;姓名 *&lt;/label&gt;&lt;input type="text" id="m-name"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="form-group"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;label&gt;性別 *&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="radio-group"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label class="radio-label"&gt;&lt;input type="radio" name="m-gender" value="女" checked&gt; 女&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label class="radio-label"&gt;&lt;input type="radio" name="m-gender" value="男"&gt; 男&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="form-group"&gt;&lt;label&gt;研修代號&lt;/label&gt;&lt;input type="text" id="m-id"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="form-row"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="form-group"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label&gt;課程類別（班別）*&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;select id="m-course-type"&gt;&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="form-group"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label&gt;組員身份類別 *&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;select id="m-role"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;option value="組員"&gt;組員&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;option value="窗口"&gt;窗口&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;option value="輔導"&gt;輔導&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="form-group"&gt;&lt;label&gt;備註&lt;/label&gt;&lt;input type="text" id="m-note"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;button class="btn btn-primary btn-block" onclick="saveMember()"&gt;確認儲存&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p1">&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;div class="modal-overlay" id="modal-coursetype"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="modal"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="modal-header"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="modal-title"&gt;管理課程類別 (班別)&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;button class="close-btn" onclick="closeModal('modal-coursetype')"&gt;✕&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="form-group" style="display:flex; gap:8px; margin-bottom:20px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;input type="text" id="new-ct-name" placeholder="輸入新類別，如：週二晚間班"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;button class="btn btn-primary" onclick="addCourseType()"&gt;新增&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;label&gt;目前現有類別列表 (點擊可刪除自訂類別)&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="coursetype-list-container" style="max-height:200px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius); padding:8px;"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p1">&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;div class="modal-overlay" id="modal-session"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="modal"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="modal-header"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="modal-title"&gt;新增課程安排&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;button class="close-btn" onclick="closeModal('modal-session')"&gt;✕&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="form-group"&gt;&lt;label&gt;課程名稱 *&lt;/label&gt;&lt;input type="text" id="s-name" placeholder="例：神鼓陣常態練習"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="form-group"&gt;&lt;label&gt;日期 *&lt;/label&gt;&lt;input type="date" id="s-date"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="form-row"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="form-group"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label&gt;開始時間&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;select id="s-time-start"&gt;&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="form-group"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label&gt;結束時間&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;select id="s-time-end"&gt;&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;button class="btn btn-primary btn-block" onclick="saveSession()"&gt;建立課程&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p1">&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;script&gt;</p>
+<p class="p1">const STORAGE_KEY = 'attendance_smart_v4';</p>
+<p class="p1">let DB = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>members: [],<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>sessions: [],<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>records: {},</p>
+<p class="p1"><span class="Apple-converted-space">  </span>courseTypes: ['神鼓陣']<span class="Apple-converted-space"> </span></p>
+<p class="p1">};</p>
+<p class="p1">if (!DB.courseTypes || DB.courseTypes.length === 0) {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>DB.courseTypes = ['神鼓陣'];</p>
+<p class="p1">}</p>
+<p class="p1">DB.courseTypes = DB.courseTypes.filter(t =&gt; t !== '常態班');</p>
+<p class="p1">if (!DB.courseTypes.includes('神鼓陣')) { DB.courseTypes.unshift('神鼓陣'); }</p>
+<p class="p2"><br></p>
+<p class="p1">function saveDB() { localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }</p>
+<p class="p2"><br></p>
+<p class="p1">let currentSessionYear = 2026;</p>
+<p class="p1">let currentSessionMonth = 5;</p>
+<p class="p1">let activeMemberFilter = 'ALL';</p>
+<p class="p2"><br></p>
+<p class="p1">const TAIWAN_HOLIDAYS = {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>'01-01': '元旦',</p>
+<p class="p1"><span class="Apple-converted-space">  </span>'02-28': '和平紀念日',</p>
+<p class="p1"><span class="Apple-converted-space">  </span>'04-04': '兒童節',</p>
+<p class="p1"><span class="Apple-converted-space">  </span>'04-05': '清明節',</p>
+<p class="p1"><span class="Apple-converted-space">  </span>'05-01': '勞動節',</p>
+<p class="p1"><span class="Apple-converted-space">  </span>'10-10': '國慶日'</p>
+<p class="p1">};</p>
+<p class="p2"><br></p>
+<p class="p1">const DYNAMIC_HOLIDAYS_2026 = {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>'2026-02-16': '春節除夕',</p>
+<p class="p1"><span class="Apple-converted-space">  </span>'2026-02-17': '春節初一',</p>
+<p class="p1"><span class="Apple-converted-space">  </span>'2026-02-18': '春節初二',</p>
+<p class="p1"><span class="Apple-converted-space">  </span>'2026-02-19': '春節初三',</p>
+<p class="p1"><span class="Apple-converted-space">  </span>'2026-06-19': '端午節',</p>
+<p class="p1"><span class="Apple-converted-space">  </span>'2026-09-25': '中秋節'</p>
+<p class="p1">};</p>
+<p class="p2"><br></p>
+<p class="p1">window.onload = function() {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const now = new Date();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>currentSessionYear = now.getFullYear();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>currentSessionMonth = now.getMonth() + 1;</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const amf = document.getElementById('att-month-filter');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>amf.innerHTML = '';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(let m=1; m&lt;=12; m++) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const opt = document.createElement('option');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>opt.value = `${currentSessionYear}-${m.toString().padStart(2,'0')}`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>opt.textContent = `${currentSessionYear} 年 ${m} 月`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(m === currentSessionMonth) opt.selected = true;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>amf.appendChild(opt);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>populateTimeDropdowns();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>updateCourseDropdowns();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>switchPage('dashboard');</p>
+<p class="p1">};</p>
+<p class="p2"><br></p>
+<p class="p1">function populateTimeDropdowns() {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const startSel = document.getElementById('s-time-start');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const endSel = document.getElementById('s-time-end');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>startSel.innerHTML = '';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>endSel.innerHTML = '';</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>for (let h = 0; h &lt; 24; h++) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>for (let m = 0; m &lt; 60; m += 15) {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const hh = h.toString().padStart(2, '0');</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const mm = m.toString().padStart(2, '0');</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const timeStr = `${hh}:${mm}`;</p>
+<p class="p2"><span class="Apple-converted-space">      </span></p>
+<p class="p1"><span class="Apple-converted-space">      </span>const optStart = new Option(timeStr, timeStr);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const optEnd = new Option(timeStr, timeStr);</p>
+<p class="p2"><span class="Apple-converted-space">      </span></p>
+<p class="p1"><span class="Apple-converted-space">      </span>if (timeStr === '19:00') optStart.selected = true;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if (timeStr === '21:00') optEnd.selected = true;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>startSel.add(optStart);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>endSel.add(optEnd);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function switchPage(name) {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.querySelectorAll('.page').forEach(p =&gt; p.classList.remove('active'));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.querySelectorAll('.nav-btn').forEach(b =&gt; b.classList.remove('active'));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('page-' + name).classList.add('active');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('nav-' + name).classList.add('active');</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>if (name === 'dashboard') renderDashboard();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if (name === 'members') { updateCourseDropdowns(); renderMembers(); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if (name === 'sessions') renderSessions();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if (name === 'attendance') { renderAttendanceSelector(); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if (name === 'stats') renderStats();</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function showToast(msg) {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const t = document.getElementById('toast');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>t.textContent = msg; t.classList.add('show');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>setTimeout(() =&gt; t.classList.remove('show'), 2000);</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function openModal(id) { document.getElementById(id).classList.add('open'); }</p>
+<p class="p1">function closeModal(id) { document.getElementById(id).classList.remove('open'); }</p>
+<p class="p2"><br></p>
+<p class="p1">function updateCourseDropdowns() {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const types = DB.courseTypes;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const importSel = document.getElementById('import-course-type');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>importSel.innerHTML = types.map(t =&gt; `&lt;option value="${t}"&gt;${t}&lt;/option&gt;`).join('');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const memberSel = document.getElementById('m-course-type');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>memberSel.innerHTML = types.map(t =&gt; `&lt;option value="${t}"&gt;${t}&lt;/option&gt;`).join('');</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function openCourseTypeModal() {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>renderCourseTypeList();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>openModal('modal-coursetype');</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function renderCourseTypeList() {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const container = document.getElementById('coursetype-list-container');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>container.innerHTML = DB.courseTypes.map(t =&gt; `</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid var(--border); font-size:14px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;span&gt;${t} ${t==='神鼓陣'?'&lt;span style="color:var(--text3); font-size:12px;"&gt;(預設)&lt;/span&gt;':''}&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>${t !== '神鼓陣' ? `&lt;button class="btn btn-danger btn-sm" style="padding:2px 8px; font-size:11px;" onclick="deleteCourseType('${t}')"&gt;刪除&lt;/button&gt;` : ''}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>`).join('');</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function addCourseType() {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const input = document.getElementById('new-ct-name');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const name = input.value.trim();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!name) { showToast('請輸入類別名稱'); return; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(DB.courseTypes.includes(name)) { showToast('此類別已存在'); return; }</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>DB.courseTypes.push(name);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>saveDB();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>input.value = '';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>renderCourseTypeList();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>updateCourseDropdowns();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>renderMembers();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>showToast('類別新增成功');</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function deleteCourseType(name) {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(name === '神鼓陣') return;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!confirm(`確定要刪除「${name}」類別嗎？該類別下的組員將會被歸類至神鼓陣。`)) return;</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>DB.members.forEach(m =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(m.courseType === name) m.courseType = '神鼓陣';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>DB.courseTypes = DB.courseTypes.filter(t =&gt; t !== name);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>saveDB();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>renderCourseTypeList();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>updateCourseDropdowns();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(activeMemberFilter === name) activeMemberFilter = 'ALL';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>renderMembers();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>showToast('類別已刪除');</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function importMembersSmart() {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const text = document.getElementById('import-text').value.trim();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const courseType = document.getElementById('import-course-type').value || '神鼓陣';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const role = document.getElementById('import-role-type').value || '組員';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if (!text) { showToast('請輸入匯入名單內容'); return; }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>let cleanText = text.replace(/[0-9１２３４５６７８９０\.\、\，\,\;\批\-\_\—\/\（\）\(\)\s]+/g, ' ');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const names = cleanText.split(' ').filter(n =&gt; n.trim().length &gt;= 2 &amp;&amp; n.trim().length &lt;= 5);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>let count = 0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>names.forEach(name =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>DB.members.push({</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id: 'm_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),</p>
+<p class="p1"><span class="Apple-converted-space">      </span>name: name.trim(),</p>
+<p class="p1"><span class="Apple-converted-space">      </span>gender: '女',</p>
+<p class="p1"><span class="Apple-converted-space">      </span>memberId: '',</p>
+<p class="p1"><span class="Apple-converted-space">      </span>courseType: courseType,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>role: role,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>note: ''</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">    </span>count++;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>saveDB();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('import-text').value = '';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>renderMembers();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>showToast(`已智慧解析並成功匯入 ${count} 位組員`);</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function renderMembers() {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const filterWrap = document.getElementById('member-course-filters');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const types = DB.courseTypes;</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>let filterHTML = `&lt;button class="filter-tab ${activeMemberFilter==='ALL'?'active':''}" onclick="setMemberFilter('ALL')"&gt;全部組員 (${DB.members.length})&lt;/button&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>types.forEach(t =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const cnt = DB.members.filter(m =&gt; m.courseType === t).length;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>filterHTML += `&lt;button class="filter-tab ${activeMemberFilter===t?'active':''}" onclick="setMemberFilter('${t}')"&gt;${t} (${cnt})&lt;/button&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>filterWrap.innerHTML = filterHTML;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const list = document.getElementById('member-list');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const filtered = activeMemberFilter === 'ALL' ? DB.members : DB.members.filter(m =&gt; m.courseType === activeMemberFilter);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!filtered.length) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>list.innerHTML = '&lt;div class="empty-state"&gt;&lt;div class="empty-dot"&gt;&lt;/div&gt;&lt;br&gt;此類別暫無組員資料&lt;/div&gt;';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>list.innerHTML = filtered.map((m, index) =&gt; `</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="member-item"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="num-badge"&gt;${index + 1}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="member-info"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="member-name"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>${m.name}<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;span class="gender-tag"&gt;(${m.gender || '女'})&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;span class="course-badge"&gt;${m.courseType || '神鼓陣'}&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;span class="role-badge"&gt;${m.role || '組員'}&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="member-meta"&gt;${m.memberId ? '研修代號: ' + m.memberId : ''} ${m.note ? '・ ' + m.note : ''}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;button class="btn btn-secondary btn-sm" onclick="editMember('${m.id}')"&gt;編輯&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')"&gt;刪除&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>`).join('');</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function setMemberFilter(type) { activeMemberFilter = type; renderMembers(); }</p>
+<p class="p2"><br></p>
+<p class="p1">function openMemberModal() {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('edit-member-id').value = '';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('modal-member-title').textContent = '手動新增組員';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('m-name').value = '';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.querySelector('input[name="m-gender"][value="女"]').checked = true;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('m-id').value = '';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('m-role').value = '組員';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('m-note').value = '';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if (DB.courseTypes.length &gt; 0) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById('m-course-type').value = DB.courseTypes[0];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>openModal('modal-member');</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function editMember(id) {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const m = DB.members.find(x =&gt; x.id === id);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!m) return;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('edit-member-id').value = id;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('modal-member-title').textContent = '編輯組員資料';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('m-name').value = m.name;</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const genderTarget = m.gender === '男' ? '男' : '女';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.querySelector(`input[name="m-gender"][value="${genderTarget}"]`).checked = true;</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('m-id').value = m.memberId || '';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('m-course-type').value = m.courseType || '神鼓陣';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('m-role').value = m.role || '組員';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('m-note').value = m.note || '';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>openModal('modal-member');</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function saveMember() {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const name = document.getElementById('m-name').value.trim();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!name) { showToast('請填寫姓名'); return; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const id = document.getElementById('edit-member-id').value;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const courseType = document.getElementById('m-course-type').value || '神鼓陣';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const role = document.getElementById('m-role').value || '組員';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const gender = document.querySelector('input[name="m-gender"]:checked').value;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const data = {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>name,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>gender,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>memberId: document.getElementById('m-id').value.trim(),</p>
+<p class="p1"><span class="Apple-converted-space">    </span>courseType,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>role,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>note: document.getElementById('m-note').value.trim()</p>
+<p class="p1"><span class="Apple-converted-space">  </span>};</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(id) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const idx = DB.members.findIndex(x =&gt; x.id === id);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>DB.members[idx] = { ...DB.members[idx], ...data };</p>
+<p class="p1"><span class="Apple-converted-space">  </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>DB.members.push({ id: 'm_' + Date.now(), ...data });</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>saveDB(); closeModal('modal-member'); renderMembers();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>showToast('組員資料已儲存');</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function deleteMember(id) {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!confirm('確認要刪除該組員嗎？')) return;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>DB.members = DB.members.filter(x =&gt; x.id !== id);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>saveDB(); renderMembers(); showToast('組員已刪除');</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">/* ── 課程管理 ── */</p>
+<p class="p1">function renderSessions() {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('session-month-title').textContent = `${currentSessionYear} 年 ${currentSessionMonth} 月`;</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const monthSessions = DB.sessions.filter(s =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const d = new Date(s.date);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return d.getFullYear() === currentSessionYear &amp;&amp; (d.getMonth() + 1) === currentSessionMonth;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}).sort((a,b) =&gt; new Date(a.date) - new Date(b.date));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('session-month-count').textContent = `本月總計：${monthSessions.length} 堂課程`;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>renderGoogleCalendarGrid(monthSessions);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const list = document.getElementById('session-list');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!monthSessions.length) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>list.innerHTML = '&lt;div class="empty-state"&gt;&lt;div class="empty-dot"&gt;&lt;/div&gt;&lt;br&gt;本月無排定課程&lt;/div&gt;';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>list.innerHTML = monthSessions.map(s =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const d = new Date(s.date);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return `</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="session-item" id="session-card-${s.id}"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="session-date-box"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="session-month"&gt;${d.getMonth()+1}月&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="session-day"&gt;${d.getDate()}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="session-info"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="session-name"&gt;${s.name}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="session-sub"&gt;${s.timeStart} ~ ${s.timeEnd}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="btn btn-secondary btn-sm" onclick="duplicateSession('${s.id}')"&gt;複製&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="btn btn-danger btn-sm" onclick="deleteSession('${s.id}')"&gt;刪除&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>`;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}).join('');</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function renderGoogleCalendarGrid(sessions) {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const grid = document.getElementById('calendar-grid');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>grid.innerHTML = '';</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const weekdays = ['日', '一', '二', '三', '四', '五', '六'];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>weekdays.forEach((w, idx) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const header = document.createElement('div');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>header.className = 'calendar-weekday';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(idx === 0 || idx === 6) header.classList.add('weekend-head');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>header.textContent = w;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>grid.appendChild(header);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const firstDay = new Date(currentSessionYear, currentSessionMonth - 1, 1);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const startDayOfWeek = firstDay.getDay();<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const totalDays = new Date(currentSessionYear, currentSessionMonth, 0).getDate();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const prevMonthTotalDays = new Date(currentSessionYear, currentSessionMonth - 1, 0).getDate();</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const today = new Date();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const isCurrentMonth = today.getFullYear() === currentSessionYear &amp;&amp; (today.getMonth() + 1) === currentSessionMonth;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>for (let i = startDayOfWeek - 1; i &gt;= 0; i--) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const cell = document.createElement('div');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>cell.className = 'calendar-day-cell other-month';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>cell.innerHTML = `&lt;div class="calendar-day-num"&gt;${prevMonthTotalDays - i}&lt;/div&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>grid.appendChild(cell);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const dayEventsMap = {};</p>
+<p class="p1"><span class="Apple-converted-space">  </span>sessions.forEach(s =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const d = new Date(s.date);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const dayNum = d.getDate();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(!dayEventsMap[dayNum]) dayEventsMap[dayNum] = [];</p>
+<p class="p1"><span class="Apple-converted-space">    </span>dayEventsMap[dayNum].push(s);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>for (let day = 1; day &lt;= totalDays; day++) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const cell = document.createElement('div');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>cell.className = 'calendar-day-cell';</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>const currentIterDate = new Date(currentSessionYear, currentSessionMonth - 1, day);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const dayOfWeek = currentIterDate.getDay();</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (dayOfWeek === 0) cell.classList.add('sun-cell');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (dayOfWeek === 6) cell.classList.add('sat-cell');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (isCurrentMonth &amp;&amp; today.getDate() === day) cell.classList.add('today');</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>const monthStr = currentSessionMonth.toString().padStart(2, '0');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const dayStr = day.toString().padStart(2, '0');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const staticKey = `${monthStr}-${dayStr}`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const dynamicKey = `${currentSessionYear}-${monthStr}-${dayStr}`;</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>let holidayName = TAIWAN_HOLIDAYS[staticKey] || DYNAMIC_HOLIDAYS_2026[dynamicKey] || '';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(holidayName) cell.classList.add('holiday-cell');</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>let holidayHTML = holidayName ? `&lt;div class="holiday-label"&gt;${holidayName}&lt;/div&gt;` : '';</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>cell.innerHTML = `</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="calendar-day-num"&gt;${day}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>${holidayHTML}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="calendar-events-container" id="cal-events-${day}"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>`;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(dayEventsMap[day]) {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>cell.classList.add('has-events');</p>
+<p class="p1"><span class="Apple-converted-space">      </span>cell.onclick = function() {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const firstSessionId = dayEventsMap[day][0].id;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>scrollToSessionCard(firstSessionId);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>};</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>grid.appendChild(cell);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>sessions.forEach(s =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const d = new Date(s.date);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const dayNum = d.getDate();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const container = document.getElementById(`cal-events-${dayNum}`);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (container) {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const ev = document.createElement('div');</p>
+<p class="p1"><span class="Apple-converted-space">      </span>ev.className = 'calendar-event-tag';</p>
+<p class="p1"><span class="Apple-converted-space">      </span>ev.title = `${s.name} (${s.timeStart})`;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>ev.textContent = s.name;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>container.appendChild(ev);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const currentCells = startDayOfWeek + totalDays;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const nextMonthCells = currentCells % 7 === 0 ? 0 : 7 - (currentCells % 7);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for (let i = 1; i &lt;= nextMonthCells; i++) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const cell = document.createElement('div');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>cell.className = 'calendar-day-cell other-month';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>cell.innerHTML = `&lt;div class="calendar-day-num"&gt;${i}&lt;/div&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>grid.appendChild(cell);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function scrollToSessionCard(sessionId) {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const card = document.getElementById(`session-card-${sessionId}`);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(card) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>card.scrollIntoView({ behavior: 'smooth', block: 'start' });</p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.querySelectorAll('.session-item').forEach(item =&gt; item.classList.remove('highlight-active'));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>card.classList.add('highlight-active');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>setTimeout(() =&gt; { card.classList.remove('highlight-active'); }, 3000);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function changeSessionMonth(delta) {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>currentSessionMonth += delta;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(currentSessionMonth &gt; 12) { currentSessionMonth = 1; currentSessionYear++; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(currentSessionMonth &lt; 1) { currentSessionMonth = 12; currentSessionYear--; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>renderSessions();</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function openSessionModal() {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('s-name').value = '';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('s-date').value = new Date().toISOString().split('T')[0];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>openModal('modal-session');</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function saveSession() {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const name = document.getElementById('s-name').value.trim();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const date = document.getElementById('s-date').value;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!name || !date) { showToast('請填寫完整資訊'); return; }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>DB.sessions.push({</p>
+<p class="p1"><span class="Apple-converted-space">    </span>id: 's_' + Date.now(),</p>
+<p class="p1"><span class="Apple-converted-space">    </span>name,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>date,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>timeStart: document.getElementById('s-time-start').value,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>timeEnd: document.getElementById('s-time-end').value</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>saveDB(); closeModal('modal-session'); renderSessions();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>showToast('課程建立成功');</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function duplicateSession(id) {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const target = DB.sessions.find(s =&gt; s.id === id);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!target) return;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const d = new Date(target.date);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>d.setDate(d.getDate() + 7);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const nextWeekDate = d.toISOString().split('T')[0];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>DB.sessions.push({</p>
+<p class="p1"><span class="Apple-converted-space">    </span>id: 's_' + Date.now() + '_' + Math.random().toString(36).substr(2,3),</p>
+<p class="p1"><span class="Apple-converted-space">    </span>name: target.name,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>date: nextWeekDate,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>timeStart: target.timeStart,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>timeEnd: target.timeEnd</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>saveDB();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>currentSessionYear = d.getFullYear();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>currentSessionMonth = d.getMonth() + 1;</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>renderSessions();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>showToast(`已複製建立「${target.name}」至 ${nextWeekDate}`);</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function deleteSession(id) {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!confirm('確認刪除此課程及其點名紀錄？')) return;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>DB.sessions = DB.sessions.filter(s =&gt; s.id !== id);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>delete DB.records[id];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>saveDB(); renderSessions(); showToast('課程已刪除');</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">/* ── 點名功能 ── */</p>
+<p class="p1">function getWeekRangeString(dateStr) {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const d = new Date(dateStr);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const day = d.getDay();<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const sun = new Date(d); sun.setDate(d.getDate() - day);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const sat = new Date(d); sat.setDate(d.getDate() + (6 - day));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>key: sun.toISOString().split('T')[0],</p>
+<p class="p1"><span class="Apple-converted-space">    </span>label: `第 ${getWeekNumber(d)} 週 (${sun.getMonth()+1}/${sun.getDate()} ~ ${sat.getMonth()+1}/${sat.getDate()})`</p>
+<p class="p1"><span class="Apple-converted-space">  </span>};</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function getWeekNumber(d) {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const target = new Date(d.valueOf());</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const dayNr = (d.getDay() + 6) % 7;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>target.setDate(target.getDate() - dayNr + 3);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const firstThursday = target.valueOf();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>target.setMonth(0, 1);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if (target.getDay() !== 4) { target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return 1 + Math.ceil((firstThursday - target) / 604800000);</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function renderAttendanceSelector() {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const filterVal = document.getElementById('att-month-filter').value;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const [year, month] = filterVal.split('-').map(Number);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const monthSessions = DB.sessions.filter(s =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const d = new Date(s.date);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return d.getFullYear() === year &amp;&amp; (d.getMonth() + 1) === month;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}).sort((a,b) =&gt; new Date(a.date) - new Date(b.date));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const sel = document.getElementById('att-session-select');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const previousSelectedValue = sel.value;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>sel.innerHTML = '&lt;option value=""&gt;— 請選擇當週要點名的課程 —&lt;/option&gt;';</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const groups = {};</p>
+<p class="p1"><span class="Apple-converted-space">  </span>monthSessions.forEach(s =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const info = getWeekRangeString(s.date);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(!groups[info.key]) groups[info.key] = { label: info.label, sessions: [] };</p>
+<p class="p1"><span class="Apple-converted-space">    </span>groups[info.key].sessions.push(s);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>Object.keys(groups).sort().forEach(weekKey =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const optGroup = document.createElement('optgroup');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>optGroup.label = groups[weekKey].label;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>groups[weekKey].sessions.forEach(s =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const opt = document.createElement('option');</p>
+<p class="p1"><span class="Apple-converted-space">      </span>opt.value = s.id;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const isDone = DB.records[s.id] ? '✓ ' : ' ';</p>
+<p class="p1"><span class="Apple-converted-space">      </span>opt.textContent = `${isDone} ${s.date.split('-')[2]}日 - ${s.name}`;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if(s.id === previousSelectedValue) opt.selected = true;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>optGroup.appendChild(opt);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">    </span>sel.appendChild(optGroup);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>loadAttendance();</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function loadAttendance() {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const sid = document.getElementById('att-session-select').value;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const area = document.getElementById('att-content');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!sid) { area.style.display = 'none'; return; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>area.style.display = 'block';</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const session = DB.sessions.find(s =&gt; s.id === sid);</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const qrEl = document.getElementById('qrcode'); qrEl.innerHTML = '';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>new QRCode(qrEl, { text: `CHECKIN:${sid}`, width: 140, height: 140, colorDark:'#2c2a27', colorLight:'#ffffff' });</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('checkin-code-display').textContent = session.date.replace(/-/g,'').slice(4);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const rec = DB.records[sid] || {};</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const list = document.getElementById('att-list');</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!DB.members.length) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>list.innerHTML = '&lt;div class="empty-state"&gt;尚無組員名單，請先至組員管理新增&lt;/div&gt;';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>list.innerHTML = DB.members.map(m =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const status = rec[m.id] || '';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return `</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="att-row"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="att-name"&gt;${m.name} &lt;span style="font-size:11px; font-weight:normal; color:var(--text3);"&gt;${m.gender || '女'} · ${m.courseType} · ${m.role || '組員'}&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="att-id"&gt;${m.memberId || ''}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="att-btns"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;button class="att-btn present ${status==='present'?'active':''}" onclick="setAttendanceState('${sid}','${m.id}','present',this)"&gt;出席&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;button class="att-btn leave ${status==='leave'?'active':''}" onclick="setAttendanceState('${sid}','${m.id}','leave',this)"&gt;請假&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;button class="att-btn absent ${status==='absent'?'active':''}" onclick="setAttendanceState('${sid}','${m.id}','absent',this)"&gt;缺席&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>`;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}).join('');</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>updateAttendanceProgress(sid);</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function setAttendanceState(sid, mid, status, btn) {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!DB.records[sid]) DB.records[sid] = {};</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(DB.records[sid][mid] === status) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>delete DB.records[sid][mid];</p>
+<p class="p1"><span class="Apple-converted-space">    </span>btn.classList.remove('active');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>DB.records[sid][mid] = status;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const row = btn.closest('.att-row');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>row.querySelectorAll('.att-btn').forEach(b =&gt; b.classList.remove('active'));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>btn.classList.add('active');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>updateAttendanceProgress(sid);</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function updateAttendanceProgress(sid) {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const rec = DB.records[sid] || {};</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const marked = Object.keys(rec).length;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const total = DB.members.length;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const pct = total ? Math.round(marked / total * 100) : 0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('att-progress-bar').style.width = pct + '%';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('att-progress-label').textContent = `${marked} / ${total} 人已記錄`;</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function saveAttendance() {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>saveDB();<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>showToast('點名紀錄儲存成功');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>renderAttendanceSelector();</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">/* ── 儀表板與統計數據 ── */</p>
+<p class="p1">function renderDashboard() {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('today-date').textContent = new Date().toLocaleDateString('zh-TW', { year:'numeric', month:'long', day:'numeric', weekday:'long' });</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('stat-members').textContent = DB.members.length;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('stat-sessions').textContent = DB.sessions.length;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const now = new Date();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const currentMonthSessions = DB.sessions.filter(s =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const d = new Date(s.date);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return d.getFullYear() === now.getFullYear() &amp;&amp; d.getMonth() === now.getMonth();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>let totalPresent = 0, totalPossible = 0, totalAbsent = 0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>currentMonthSessions.forEach(s =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const rec = DB.records[s.id] || {};</p>
+<p class="p1"><span class="Apple-converted-space">    </span>DB.members.forEach(m =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>totalPossible++;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if(rec[m.id] === 'present') totalPresent++;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if(rec[m.id] === 'absent') totalAbsent++;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('stat-rate').textContent = totalPossible ? Math.round(totalPresent / totalPossible * 100) + '%' : '—';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('stat-absent').textContent = totalAbsent;</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function renderStats() {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const year = parseInt(document.getElementById('stats-year').value);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const month = parseInt(document.getElementById('stats-month').value);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const sessions = DB.sessions.filter(s =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const d = new Date(s.date);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (d.getFullYear() !== year) return false;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if (month !== 0 &amp;&amp; (d.getMonth() + 1) !== month) return false;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return true;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}).filter(s =&gt; DB.records[s.id]);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const summaryEl = document.getElementById('stats-summary');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const tbody = document.getElementById('stats-tbody');</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!sessions.length) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>summaryEl.innerHTML = '';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>tbody.innerHTML = '&lt;tr&gt;&lt;td colspan="10" style="text-align:center; color:var(--text3); padding:32px;"&gt;指定期間內尚無歷史點名數據&lt;/td&gt;&lt;/tr&gt;';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>let tP = 0, tA = 0, tL = 0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const rows = DB.members.map((m, idx) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>let p = 0, a = 0, l = 0;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>sessions.forEach(s =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const v = (DB.records[s.id] || {})[m.id];</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if(v === 'present') p++;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>else if(v === 'absent') a++;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>else if(v === 'leave') l++;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">    </span>tP += p; tA += a; tL += l;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const rate = sessions.length ? Math.round(p / sessions.length * 100) : 0;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return { m, p, a, l, rate, sequence: idx + 1 };</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>summaryEl.innerHTML = `</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="stat-card green"&gt;&lt;div class="stat-num"&gt;${Math.round(tP / (sessions.length * DB.members.length || 1) * 100)}%&lt;/div&gt;&lt;div class="stat-label"&gt;平均出席率&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="stat-card"&gt;&lt;div class="stat-num"&gt;${sessions.length}&lt;/div&gt;&lt;div class="stat-label"&gt;已點名堂數&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="stat-card red"&gt;&lt;div class="stat-num"&gt;${tA}&lt;/div&gt;&lt;div class="stat-label"&gt;累積缺席&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="stat-card orange"&gt;&lt;div class="stat-num"&gt;${tL}&lt;/div&gt;&lt;div class="stat-label"&gt;累積請假&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>`;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>tbody.innerHTML = rows.map(r =&gt; `</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;tr class="clickable-row" onclick="toggleRowHighlight(this)"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;td class="col-seq"&gt;&lt;span style="font-size:13px; color:var(--text3);"&gt;${r.sequence}&lt;/span&gt;&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;td class="col-name"&gt;&lt;strong&gt;${r.m.name}&lt;/strong&gt;&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;td class="col-gender"&gt;${r.m.gender || '女'}&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;td class="col-id"&gt;${r.m.memberId || '—'}&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;td class="col-type"&gt;&lt;span class="course-badge"&gt;${r.m.courseType || '神鼓陣'}&lt;/span&gt;&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;td class="col-role"&gt;&lt;span class="role-badge"&gt;${r.m.role || '組員'}&lt;/span&gt;&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;td class="col-num"&gt;${r.p}&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;td class="col-num"&gt;${r.a}&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;td class="col-num"&gt;${r.l}&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;td class="col-rate"&gt;&lt;span class="pct ${r.rate&gt;=80?'high':r.rate&gt;=60?'mid':'low'}"&gt;${r.rate}%&lt;/span&gt;&lt;/td&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/tr&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>`).join('');</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function toggleRowHighlight(rowElement) {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const isSelected = rowElement.classList.contains('row-selected');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.querySelectorAll('#stats-tbody tr').forEach(tr =&gt; tr.classList.remove('row-selected'));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!isSelected) {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>rowElement.classList.add('row-selected');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1">}</p>
+<p class="p1">&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
 </body>
 </html>
