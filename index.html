@@ -29,7 +29,6 @@
         .card-leader { background-color: #fef3c7; border: 2px solid #d97706; color: #92400e; }
         .card-inactive { background-color: #f1f5f9; border: 2px solid #e2e8f0; color: #94a3b8; text-decoration: line-through; }
         
-        /* 閃爍動畫：產生淡色回饋 */
         @keyframes btnFlash {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.6; }
@@ -70,6 +69,22 @@
             border: 2px solid transparent;
         }
 
+        /* 輔助按鈕樣式 */
+        .btn-aux {
+            flex: 1;
+            font-size: 12px;
+            font-weight: 900;
+            padding: 8px 0;
+            border-radius: 10px;
+            transition: all 0.2s;
+            border: 2px solid #e2e8f0;
+            background: white;
+            color: #64748b;
+        }
+        .btn-aux:active { transform: scale(0.95); background: #f8fafc; }
+        .btn-clear { color: #ef4444; border-color: #fee2e2; }
+        .btn-clear:active { background: #fef2f2; }
+
         .order-item-box {
             background: white;
             border: 2px solid #fde68a;
@@ -90,15 +105,9 @@
 
         .arrow-container {
             position: absolute;
-            right: 0; 
-            top: 0;
-            bottom: 0;
-            width: 0; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: none;
-            z-index: 5;
+            right: 0; top: 0; bottom: 0; width: 0; 
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none; z-index: 5;
             transform: translateX(24px); 
         }
 
@@ -115,9 +124,16 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
             <div class="lg:col-span-4 space-y-6">
-                <div class="space-y-4">
+                <div class="space-y-3">
                     <textarea id="inputContent" rows="3" placeholder="貼上名單..." class="w-full p-4 border-2 border-slate-200 rounded-2xl focus:border-blue-400 focus:outline-none transition resize-none text-sm bg-white neubrutalism"></textarea>
+                    
                     <button onclick="addMembers()" class="w-full bg-slate-800 text-white font-bold py-4 rounded-xl hover:bg-slate-700 transition active:scale-[0.98]">匯入名單</button>
+                    
+                    <div class="flex gap-2">
+                        <button onclick="toggleAll(true)" class="btn-aux">全選</button>
+                        <button onclick="toggleAll(false)" class="btn-aux">取消</button>
+                        <button onclick="clearStorage()" class="btn-aux btn-clear">清除名單</button>
+                    </div>
                 </div>
                 
                 <div class="flex flex-wrap gap-2 py-2 border-b-2 border-slate-100">
@@ -182,6 +198,7 @@
         function toggleLeader(idx, e) { e.stopPropagation(); members[idx].isLeader = !members[idx].isLeader; save(); }
         function toggleMember(idx) { members[idx].present = !members[idx].present; save(); }
         function removeMember(idx) { members.splice(idx, 1); save(); }
+        function toggleAll(val) { members.forEach(m => m.present = val); save(); }
 
         function render() {
             const list = document.getElementById('memberList');
@@ -206,7 +223,6 @@
             const count = parseInt(document.getElementById('groupCount').value);
             if (activeOnes.length === 0) return alert('請先選人');
             
-            // 視覺回饋：淡色閃爍動畫並持續1秒
             const btn = document.getElementById('btnShuffle');
             btn.classList.add('btn-loading');
             
@@ -222,12 +238,9 @@
                 document.getElementById('orderSummary').classList.add('hidden');
                 renderResults();
                 
-                // 結束動畫
                 btn.classList.remove('btn-loading');
-                
-                // Smooth Scroll: 自動捲動到結果區
                 document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 1000); // 維持1秒的回饋感
+            }, 1000);
         }
 
         function drawGroupOrderWithEffect() {
@@ -264,18 +277,12 @@
                 const isLast = i === groups.length - 1;
                 const isLeftColumn = i % 2 === 0;
                 const colSpan = (isLast && isLeftColumn) ? 'col-span-2' : 'col-span-1';
-                
                 const wrapper = document.createElement('div');
                 wrapper.className = `${colSpan} relative flex items-center justify-center`;
-
                 let arrowHtml = '';
                 if (isLeftColumn && !isLast) {
-                    arrowHtml = `
-                        <div class="arrow-container">
-                            <span class="text-amber-500 font-black text-2xl md:text-5xl">⟶</span>
-                        </div>`;
+                    arrowHtml = `<div class="arrow-container"><span class="text-amber-500 font-black text-2xl md:text-5xl">⟶</span></div>`;
                 }
-                
                 wrapper.innerHTML = `
                     <div class="order-item-box">
                         <span class="text-[12px] md:text-sm text-amber-600 font-bold mb-1">第 ${i+1} 順位</span>
@@ -311,7 +318,15 @@
                 area.appendChild(div);
             });
         }
-        function clearStorage() { if(confirm('確定要清空名單嗎？')) { members = []; currentGroups = []; save(); document.getElementById('resultArea').innerHTML = ''; document.getElementById('orderSummary').classList.add('hidden'); } }
+
+        function clearStorage() { 
+            if(confirm('確定要清空名單嗎？')) { 
+                members = []; currentGroups = []; save(); 
+                document.getElementById('resultArea').innerHTML = ''; 
+                document.getElementById('orderSummary').classList.add('hidden'); 
+            } 
+        }
+
         render();
     </script>
 </body>
