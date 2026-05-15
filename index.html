@@ -7,12 +7,20 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap');
-        html { scroll-behavior: smooth; }
+        
+        /* 核心修正：防止點擊產生縮放 */
+        html { 
+            scroll-behavior: smooth; 
+            touch-action: manipulation; 
+            -webkit-text-size-adjust: 100%;
+        }
+        
         body { 
             font-family: 'Inter', 'Microsoft JhengHei', sans-serif; 
             background-color: #f8fafc; 
             color: #334155; 
-            -webkit-tap-highlight-color: transparent;
+            -webkit-tap-highlight-color: transparent; /* 移除點擊高亮藍框 */
+            touch-action: manipulation;
         }
         
         .neubrutalism { border: 2px solid #475569; box-shadow: 4px 4px 0px 0px rgba(71, 85, 105, 0.1); }
@@ -74,25 +82,23 @@
             .order-item-box { padding: 12px 32px; min-width: 170px; border-radius: 16px; }
         }
 
-        /* 關鍵：箭頭置中定位邏輯 */
+        /* 箭頭置中定位邏輯 */
         .arrow-container {
             position: absolute;
             right: 0; 
             top: 0;
             bottom: 0;
-            width: 0; /* 寬度為0，確保不佔空間，不推擠右側框 */
+            width: 0; 
             display: flex;
             align-items: center;
             justify-content: center;
             pointer-events: none;
             z-index: 5;
-            /* 將箭頭推移至間隙(gap-x-12 = 48px)的中心點 */
             transform: translateX(24px); 
         }
 
         @media (max-width: 768px) {
             .arrow-container {
-                /* 移動端間隙較小，相應調整 */
                 transform: translateX(12px); 
             }
         }
@@ -195,13 +201,16 @@
 
         function shuffleAndGroup() {
             const activeOnes = members.filter(m => m.present);
-            const leaders = activeOnes.filter(m => m.isLeader).sort(() => Math.random() - 0.5);
-            const regulars = activeOnes.filter(m => !m.isLeader).sort(() => Math.random() - 0.5);
             const count = parseInt(document.getElementById('groupCount').value);
             if (activeOnes.length === 0) return alert('請先選人');
+            
+            const leaders = activeOnes.filter(m => m.isLeader).sort(() => Math.random() - 0.5);
+            const regulars = activeOnes.filter(m => !m.isLeader).sort(() => Math.random() - 0.5);
+            
             currentGroups = Array.from({ length: Math.min(count, activeOnes.length) }, (_, i) => ({ id: i + 1, members: [], order: null }));
             leaders.forEach((m, i) => currentGroups[i % currentGroups.length].members.push({ name: m.name, isLeader: true }));
             regulars.forEach((m, i) => currentGroups[(leaders.length + i) % currentGroups.length].members.push({ name: m.name, isLeader: false }));
+            
             document.getElementById('btnDrawOrder').disabled = false;
             document.getElementById('orderSummary').classList.add('hidden');
             renderResults();
