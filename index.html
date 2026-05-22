@@ -55,6 +55,10 @@
             pointer-events: none; z-index: 5; transform: translateX(24px);
         }
         @media (max-width: 768px) { .arrow-container { transform: translateX(12px); } }
+
+        /* 模式切換按鈕樣式 */
+        .mode-btn { border: 2px solid #e2e8f0; font-size: 13px; font-weight: 900; padding: 6px 16px; border-radius: 10px; transition: all 0.2s; }
+        .mode-btn.active { background-color: #475569; color: white; border-color: #475569; }
     </style>
 </head>
 <body class="p-4 md:p-10 pb-20">
@@ -87,16 +91,21 @@
             </div>
 
             <div class="lg:col-span-7 space-y-6">
+                <div class="flex gap-2 mb-2">
+                    <button id="modeGroup" onclick="switchMode('group')" class="mode-btn active">分組模式</button>
+                    <button id="modeDraw" onclick="switchMode('draw')" class="mode-btn">抽籤模式</button>
+                </div>
+
                 <div class="bg-white p-4 md:p-5 rounded-2xl neubrutalism flex flex-col sm:flex-row items-stretch gap-4">
                     <div class="flex items-center justify-between bg-slate-50 p-2 px-5 rounded-xl border-2 border-slate-100 flex-1">
-                        <span class="text-sm font-bold text-slate-500">組數</span>
+                        <span id="stepperLabel" class="text-sm font-bold text-slate-500">組數</span>
                         <div class="flex items-center gap-4">
                             <button onclick="changeGroupCount(-1)" class="btn-stepper">－</button>
                             <input id="groupCount" type="number" value="2" readonly class="w-10 bg-transparent font-black text-2xl text-slate-800 text-center">
                             <button onclick="changeGroupCount(1)" class="btn-stepper">＋</button>
                         </div>
                     </div>
-                    <button id="btnShuffle" onclick="shuffleAndGroup()" class="flex-[1.5] bg-blue-500 text-white font-black py-4 rounded-xl text-lg transition-all active:scale-[0.98]">開始分組</button>
+                    <button id="btnShuffle" onclick="executeAction()" class="flex-[1.5] bg-blue-500 text-white font-black py-4 rounded-xl text-lg transition-all active:scale-[0.98]">開始分組</button>
                     <button id="btnDrawOrder" onclick="drawGroupOrderWithEffect()" disabled class="flex-[1.2] bg-amber-400 text-slate-800 font-black py-4 rounded-xl text-lg active:scale-[0.98] disabled:opacity-30">抽順序</button>
                 </div>
 
@@ -114,6 +123,7 @@
     <script>
         let members = JSON.parse(localStorage.getItem('my_group_tool_v24') || '[]');
         let currentGroups = [];
+        let currentMode = 'group'; // 'group' 或 'draw'
 
         function save() { localStorage.setItem('my_group_tool_v24', JSON.stringify(members)); render(); }
 
@@ -169,10 +179,41 @@
             document.getElementById('statOthers').innerText = totalActive - starCount;
         }
 
+        function switchMode(mode) {
+            currentMode = mode;
+            const btnGroup = document.getElementById('modeGroup');
+            const btnDraw = document.getElementById('modeDraw');
+            const stepperLabel = document.getElementById('stepperLabel');
+            const btnShuffle = document.getElementById('btnShuffle');
+            const inputCount = document.getElementById('groupCount');
+
+            if (mode === 'group') {
+                btnGroup.classList.add('active');
+                btnDraw.classList.remove('active');
+                stepperLabel.innerText = '組數';
+                btnShuffle.innerText = '開始分組';
+                if(parseInt(inputCount.value) < 1) inputCount.value = 2;
+            } else {
+                btnDraw.classList.add('active');
+                btnGroup.classList.remove('active');
+                stepperLabel.innerText = '抽出人數';
+                btnShuffle.innerText = '開始抽籤';
+                if(parseInt(inputCount.value) < 1) inputCount.value = 1;
+            }
+        }
+
         function changeGroupCount(val) {
             const input = document.getElementById('groupCount');
             let current = parseInt(input.value);
             if (current + val >= 1) input.value = current + val;
+        }
+
+        function executeAction() {
+            if (currentMode === 'group') {
+                shuffleAndGroup();
+            } else {
+                drawLuckyMembers();
+            }
         }
 
         function shuffleAndGroup() {
@@ -187,9 +228,51 @@
                 const leaders = activeOnes.filter(m => m.isLeader).sort(() => Math.random() - 0.5);
                 const regulars = activeOnes.filter(m => !m.isLeader).sort(() => Math.random() - 0.5);
 
-                currentGroups = Array.from({ length: Math.min(count, activeOnes.length) }, (_, i) => ({ id: i + 1, members: [], order: null }));
+                currentGroups = Array.from({ length: Math.min(count, activeOnes.length) }, (_, i) => ({ id: i + 1, customTitle: `第 ${i + 1} 組`, members: [], order: null }));
                 leaders.forEach((m, i) => currentGroups[i % currentGroups.length].members.push({ name: m.name, isLeader: true }));
                 regulars.forEach((m, i) => currentGroups[(leaders.length + i) % currentGroups.length].members.push({ name: m.name, isLeader: false }));
+
+                document.getElementById('btnDrawOrder').disabled = false;
+                document.getElementById('orderSummary').classList.add('hidden');
+                renderResults();
+                btn.classList.remove('btn-loading');
+                document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 800);
+        }
+
+        function drawLuckyMembers() {
+            const activeOnes = members.filter(m => m.present);
+            const drawCount = parseInt(document.getElementById('groupCount').value);
+            if (activeOnes.length === 0) return alert('請先選取名單');
+            if (drawCount > activeOnes.length) return alert('抽出人數不能大於目前選取的總人數！');
+
+            const btn = document.getElementById('btnShuffle');
+            btn.classList.add('btn-loading');
+
+            setTimeout(() => {
+                const shuffled = [...activeOnes].sort(() => Math.random() - 0.5);
+                
+                const winners = shuffled.slice(0, drawCount);
+                const losers = shuffled.slice(drawCount);
+
+                currentGroups = [
+                    {
+                        id: 1,
+                        customTitle: '中籤名單',
+                        members: winners.map(m => ({ name: m.name, isLeader: m.isLeader })),
+                        order: null
+                    },
+                    {
+                        id: 2,
+                        customTitle: '未中籤名單',
+                        members: losers.map(m => ({ name: m.name, isLeader: m.isLeader })),
+                        order: null
+                    }
+                ];
+
+                if (losers.length === 0) {
+                    currentGroups.pop();
+                }
 
                 document.getElementById('btnDrawOrder').disabled = false;
                 document.getElementById('orderSummary').classList.add('hidden');
@@ -234,10 +317,15 @@
                 const wrapper = document.createElement('div');
                 wrapper.className = `${colSpan} relative flex items-center justify-center`;
                 let arrowHtml = (isLeftColumn && !isLast) ? `<div class="arrow-container"><span class="text-amber-500 font-black text-2xl md:text-4xl">⟶</span></div>` : '';
+                
+                const titleText = isTemp 
+                    ? (groups[Math.floor(Math.random() * groups.length)].customTitle || `第 ${g.id} 組`)
+                    : (g.customTitle || `第 ${g.id} 組`);
+
                 wrapper.innerHTML = `
                     <div class="order-item-box">
                         <span class="text-[10px] text-amber-600 font-bold mb-1">第 ${i + 1} 順位</span>
-                        <span class="font-black text-lg text-slate-800">第 ${isTemp ? Math.floor(Math.random() * groups.length) + 1 : g.id} 組</span>
+                        <span class="font-black text-base text-slate-800 text-center truncate w-full">${titleText}</span>
                     </div>
                     ${arrowHtml}
                 `;
@@ -257,9 +345,10 @@
                 const memberCount = group.members.length;
                 const div = document.createElement('div');
                 div.className = 'bg-white p-5 rounded-2xl card-result flex flex-col relative';
+                
                 div.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
-                        <span class="font-black text-xl text-slate-800">第 ${group.id} 組</span>
+                        <span class="font-black text-xl text-slate-800">${group.customTitle || `第 ${group.id} 組`}</span>
                         ${group.order ? `<div class="order-badge">順序 ${group.order}</div>` : ''}
                     </div>
                     <div class="mb-4">
